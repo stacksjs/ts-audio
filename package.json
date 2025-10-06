@@ -78,7 +78,7 @@
     "@stacksjs/tlsx": "^0.10.0",
     "@types/bun": "^1.2.23",
     "buddy-bot": "0.9.7",
-    "bumpp": "^10.2.3",
+    "bumpp": "^10.3.0",
     "bun-git-hooks": "^0.2.19",
     "bun-plugin-dtsx": "^0.21.12",
     "bunfig": "^0.15.0",
