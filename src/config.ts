@@ -11,4 +11,6 @@ export const config: AudioxConfig = await loadConfig({
   name: 'audiox',
   cwd: resolve(__dirname, '..'),
   defaultConfig,
-})
+  endpoint: '',
+  headers: {},
+} as any)
