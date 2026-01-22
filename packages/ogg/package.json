@@ -1,0 +1,49 @@
+{
+  "name": "@ts-audio/ogg",
+  "type": "module",
+  "version": "0.0.0",
+  "description": "OGG container codec package for ts-audio - zero dependency TypeScript implementation.",
+  "author": "Chris Breuer <chris@stacksjs.org>",
+  "license": "MIT",
+  "homepage": "https://github.com/stacksjs/ts-audio",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/stacksjs/ts-audio.git"
+  },
+  "bugs": {
+    "url": "https://github.com/stacksjs/ts-audio/issues"
+  },
+  "keywords": [
+    "ogg",
+    "vorbis",
+    "opus",
+    "audio",
+    "container",
+    "typescript",
+    "zero-dependency"
+  ],
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "README.md",
+    "dist"
+  ],
+  "scripts": {
+    "build": "bun build.ts",
+    "test": "bun test",
+    "typecheck": "bunx tsc --noEmit"
+  },
+  "peerDependencies": {
+    "ts-audio": "workspace:*"
+  },
+  "devDependencies": {
+    "ts-audio": "workspace:*",
+    "bun-plugin-dtsx": "^0.9.9"
+  }
+}

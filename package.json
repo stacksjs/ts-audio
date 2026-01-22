@@ -1,90 +1,61 @@
 {
-  "name": "@stacksjs/audiox",
+  "name": "ts-audio-monorepo",
   "type": "module",
-  "version": "0.1.1",
-  "description": "Powerful audio processing for your media workflows.",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Zero-dependency TypeScript audio toolkit for modern media workflows.",
   "author": "Chris Breuer <chris@stacksjs.org>",
   "license": "MIT",
-  "homepage": "https://github.com/stacksjs/audiox",
+  "homepage": "https://github.com/stacksjs/ts-audio",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/stacksjs/audiox.git"
+    "url": "git+https://github.com/stacksjs/ts-audio.git"
   },
   "bugs": {
-    "url": "https://github.com/stacksjs/audiox/issues"
+    "url": "https://github.com/stacksjs/ts-audio/issues"
   },
   "keywords": [
     "audio",
-    "conversion",
-    "processing",
-    "wav",
     "mp3",
+    "wav",
     "aac",
-    "media",
-    "workflows",
-    "environment",
-    "bun",
-    "stacks",
+    "flac",
+    "ogg",
+    "opus",
+    "vorbis",
+    "codec",
+    "demuxer",
+    "muxer",
     "typescript",
-    "javascript"
+    "zero-dependency"
   ],
-  "exports": {
-    ".": {
-      "import": "./dist/src/index.js"
-    }
-  },
-  "module": "./dist/src/index.js",
-  "types": "./dist/index.d.ts",
-  "bin": {
-    "audiox": "./dist/bin/cli.js"
-  },
-  "files": ["README.md", "dist"],
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
-    "build": "bun build.ts && bun run compile",
-    "compile": "bun build ./bin/cli.ts --compile --minify --outfile bin/audiox",
-    "compile:all": "bun run compile:linux-x64 && bun run compile:linux-arm64 && bun run compile:windows-x64 && bun run compile:darwin-x64 && bun run compile:darwin-arm64",
-    "compile:linux-x64": "bun build ./bin/cli.ts --compile --minify --target=bun-linux-x64 --outfile bin/audiox-linux-x64",
-    "compile:linux-arm64": "bun build ./bin/cli.ts --compile --minify --target=bun-linux-arm64 --outfile bin/audiox-linux-arm64",
-    "compile:windows-x64": "bun build ./bin/cli.ts --compile --minify --target=bun-windows-x64 --outfile bin/audiox-windows-x64.exe",
-    "compile:darwin-x64": "bun build ./bin/cli.ts --compile --minify --target=bun-darwin-x64 --outfile bin/audiox-darwin-x64",
-    "compile:darwin-arm64": "bun build ./bin/cli.ts --compile --minify --target=bun-darwin-arm64 --outfile bin/audiox-darwin-arm64",
+    "build": "bun run build:packages",
+    "build:packages": "bun run --filter '*' build",
+    "fresh": "bunx rimraf node_modules/ bun.lock && bun i",
+    "test": "bun test",
     "lint": "bunx --bun eslint .",
     "lint:fix": "bunx --bun eslint . --fix",
-    "fresh": "bunx rimraf node_modules/ bun.lock && bun i",
-    "changelog": "bunx changelogen --output CHANGELOG.md",
-    "prepublishOnly": "bun --bun run build && bun run compile:all && bun run zip",
-    "release": "bun run changelog && bunx bumpp package.json --all",
-    "test": "bun test",
+    "changelog": "bunx logsmith --verbose",
+    "changelog:generate": "bunx logsmith --output CHANGELOG.md",
+    "release": "bun run changelog:generate && bunx bumpx prompt --recursive",
     "typecheck": "bunx tsc --noEmit",
-    "dev:docs": "bun --bun vitepress dev docs",
-    "build:docs": "bun --bun vitepress build docs",
-    "preview:docs": "bun --bun vitepress preview docs",
-    "zip": "bun run zip:all",
-    "zip:all": "bun run zip:linux-x64 && bun run zip:linux-arm64 && bun run zip:windows-x64 && bun run zip:darwin-x64 && bun run zip:darwin-arm64",
-    "zip:linux-x64": "zip -j bin/audiox-linux-x64.zip bin/audiox-linux-x64",
-    "zip:linux-arm64": "zip -j bin/audiox-linux-arm64.zip bin/audiox-linux-arm64",
-    "zip:windows-x64": "zip -j bin/audiox-windows-x64.zip bin/audiox-windows-x64.exe",
-    "zip:darwin-x64": "zip -j bin/audiox-darwin-x64.zip bin/audiox-darwin-x64",
-    "zip:darwin-arm64": "zip -j bin/audiox-darwin-arm64.zip bin/audiox-darwin-arm64"
+    "dev:docs": "bun --bun bunpress dev docs",
+    "build:docs": "bun --bun bunpress build docs",
+    "deploy:docs": "bun --bun bunpress deploy docs",
+    "preview:docs": "bun --bun bunpress preview docs"
   },
   "devDependencies": {
-    "@stacksjs/clapp": "^0.2.0",
-    "@stacksjs/docs": "^0.70.23",
-    "@stacksjs/eslint-config": "^4.14.0-beta.3",
-    "@stacksjs/tlsx": "^0.10.0",
-    "better-dx": "^0.2.0",
-    "cac": "^6.7.14",
-    "changelogen": "^0.6.2",
-    "consola": "^3.4.2",
-    "unocss": "^66.5.1"
-  },
-  "overrides": {
-    "unconfig": "0.3.10"
+    "better-dx": "^0.2.5",
+    "bun-plugin-dtsx": "^0.9.9"
   },
   "git-hooks": {
     "pre-commit": {
       "staged-lint": {
-        "*.{js,ts,json,yaml,yml,md}": "bunx --bun eslint --fix"
+        "*.{js,ts,json,yaml,yml,md}": "bunx --bun pickier --fix"
       }
     },
     "commit-msg": "bunx gitlint --edit .git/COMMIT_EDITMSG"
