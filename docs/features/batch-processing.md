@@ -144,7 +144,7 @@ Use shell commands for batch operations:
 
 ```bash
 # Convert all MP3 files to WAV using a loop
-for file in ./input/*.mp3; do
+for file in ./input/_.mp3; do
   audiox convert "$file" "./output/$(basename "${file%.mp3}.wav")" \
     --codec pcm_s16le \
     --channels 1 \
@@ -152,7 +152,7 @@ for file in ./input/*.mp3; do
 done
 
 # Using find for recursive processing
-find ./input -name "*.mp3" -exec audiox convert {} ./output/{}.wav \
+find ./input -name "_.mp3" -exec audiox convert {} ./output/{}.wav \
   --codec pcm_s16le \;
 ```
 

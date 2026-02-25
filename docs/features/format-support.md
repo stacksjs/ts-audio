@@ -192,6 +192,7 @@ Common conversion scenarios:
 ## Best Practices for Format Selection
 
 ### For Music Distribution
+
 ```ts
 // High-quality MP3 for downloads
 await audio('master.wav', 'release.mp3', {
@@ -203,6 +204,7 @@ await audio('master.wav', 'release.mp3', {
 ```
 
 ### For Podcasts
+
 ```ts
 // Podcast-optimized audio
 await audio('episode.wav', 'episode.mp3', {
@@ -214,6 +216,7 @@ await audio('episode.wav', 'episode.mp3', {
 ```
 
 ### For Voice Assistants
+
 ```ts
 // Voice recognition format
 await audio('command.mp3', 'command.wav', {
@@ -224,6 +227,7 @@ await audio('command.mp3', 'command.wav', {
 ```
 
 ### For Web Streaming
+
 ```ts
 // Web-optimized AAC
 await audio('track.wav', 'track.aac', {

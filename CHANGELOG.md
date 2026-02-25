@@ -1,6 +1,5 @@
 # Changelog
 
-
 ## v0.1.0...main
 
 [compare changes](https://github.com/stacksjs/audiox/compare/v0.1.0...main)
@@ -14,7 +13,6 @@
 - Chris ([@chrisbbreuer](http://github.com/chrisbbreuer))
 
 ## ...main
-
 
 ### 🏡 Chore
 
@@ -376,7 +374,6 @@
 - Chris <chrisbreuer93@gmail.com>
 
 ## ...main
-
 
 ### 🏡 Chore
 
