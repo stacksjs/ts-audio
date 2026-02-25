@@ -69,7 +69,10 @@ class FormatRegistry {
   /**
    * Get format by file extension
    */
-  getByExtension(ext: string): { input?: InputFormat; output?: OutputFormat } {
+  getByExtension(ext: string): {
+    input?: InputFormat
+    output?: OutputFormat
+  } {
     const normalizedExt = ext.toLowerCase().replace(/^\./, '')
 
     let input: InputFormat | undefined

@@ -103,8 +103,3 @@ We would like to extend our thanks to the following sponsors for funding Stacks 
 The MIT License (MIT). Please see [LICENSE](https://github.com/stacksjs/stacks/tree/main/LICENSE.md) for more information.
 
 Made with 💙
-
-<!-- Badges -->
-
-<!-- [codecov-src]: https://img.shields.io/codecov/c/gh/stacksjs/audiox/main?style=flat-square
-[codecov-href]: https://codecov.io/gh/stacksjs/audiox -->

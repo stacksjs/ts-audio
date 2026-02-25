@@ -275,7 +275,10 @@ export interface ID3v2Frame {
 }
 
 export interface ID3v2Tag {
-  version: { major: number; minor: number }
+  version: {
+    major: number
+    minor: number
+  }
   flags: number
   frames: ID3v2Frame[]
 }
@@ -318,7 +321,10 @@ export interface FlacCueTrack {
   isrc: string
   isAudio: boolean
   preEmphasis: boolean
-  indices: { offset: bigint; number: number }[]
+  indices: {
+    offset: bigint
+    number: number
+  }[]
 }
 
 export interface FlacPicture {

@@ -41,7 +41,8 @@ await build({
 const cliPath = './dist/bin/cli.js'
 const cliContent = await Bun.file(cliPath).text()
 if (!cliContent.startsWith('#!')) {
-  await Bun.write(cliPath, '#!/usr/bin/env bun\n' + cliContent)
+  await Bun.write(cliPath, `#!/usr/bin/env bun
+${cliContent}`)
 }
 
 console.log('Build completed: ts-audio')

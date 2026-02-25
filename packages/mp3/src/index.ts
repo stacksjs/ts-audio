@@ -167,10 +167,10 @@ function parseID3v2(data: Uint8Array): ID3v2Tag | null {
   const flags = data[5]
 
   // Syncsafe integer for size
-  const size = ((data[6] & 0x7F) << 21) |
-               ((data[7] & 0x7F) << 14) |
-               ((data[8] & 0x7F) << 7) |
-               (data[9] & 0x7F)
+  const size = ((data[6] & 0x7F) << 21)
+    | ((data[7] & 0x7F) << 14)
+    | ((data[8] & 0x7F) << 7)
+    | (data[9] & 0x7F)
 
   if (10 + size > data.length) return null
 
@@ -264,37 +264,81 @@ function convertID3ToMetadata(id3v1: ID3v1Tag | null, id3v2: ID3v2Tag | null): A
     for (const frame of id3v2.frames) {
       const value = id3v2FrameToString(frame)
       switch (frame.id) {
-        case 'TIT2': case 'TT2': metadata.title = value; break
-        case 'TPE1': case 'TP1': metadata.artist = value; break
-        case 'TALB': case 'TAL': metadata.album = value; break
-        case 'TPE2': case 'TP2': metadata.albumArtist = value; break
-        case 'TCOM': case 'TCM': metadata.composer = value; break
-        case 'TCON': case 'TCO': metadata.genre = value; break
-        case 'TYER': case 'TYE': case 'TDRC':
-          const year = Number.parseInt(value, 10)
-          if (!Number.isNaN(year)) metadata.year = year
+        case 'TIT2':
+        case 'TT2':
+          metadata.title = value
           break
-        case 'TRCK': case 'TRK':
+        case 'TPE1':
+        case 'TP1':
+          metadata.artist = value
+          break
+        case 'TALB':
+        case 'TAL':
+          metadata.album = value
+          break
+        case 'TPE2':
+        case 'TP2':
+          metadata.albumArtist = value
+          break
+        case 'TCOM':
+        case 'TCM':
+          metadata.composer = value
+          break
+        case 'TCON':
+        case 'TCO':
+          metadata.genre = value
+          break
+        case 'TYER':
+        case 'TYE':
+        case 'TDRC': {
+          const year = Number.parseInt(value, 10)
+          if (!Number.isNaN(year))
+            metadata.year = year
+          break
+        }
+        case 'TRCK':
+        case 'TRK': {
           const [trackNum, trackTotal] = value.split('/')
           metadata.trackNumber = Number.parseInt(trackNum, 10)
-          if (trackTotal) metadata.trackTotal = Number.parseInt(trackTotal, 10)
+          if (trackTotal)
+            metadata.trackTotal = Number.parseInt(trackTotal, 10)
           break
-        case 'TPOS': case 'TPA':
+        }
+        case 'TPOS':
+        case 'TPA': {
           const [discNum, discTotal] = value.split('/')
           metadata.discNumber = Number.parseInt(discNum, 10)
-          if (discTotal) metadata.discTotal = Number.parseInt(discTotal, 10)
+          if (discTotal)
+            metadata.discTotal = Number.parseInt(discTotal, 10)
           break
-        case 'COMM': case 'COM': metadata.comment = value; break
-        case 'TCOP': case 'TCR': metadata.copyright = value; break
-        case 'TENC': case 'TEN': metadata.encodedBy = value; break
-        case 'TBPM': case 'TBP':
+        }
+        case 'COMM':
+        case 'COM':
+          metadata.comment = value
+          break
+        case 'TCOP':
+        case 'TCR':
+          metadata.copyright = value
+          break
+        case 'TENC':
+        case 'TEN':
+          metadata.encodedBy = value
+          break
+        case 'TBPM':
+        case 'TBP': {
           const bpm = Number.parseInt(value, 10)
-          if (!Number.isNaN(bpm)) metadata.bpm = bpm
+          if (!Number.isNaN(bpm))
+            metadata.bpm = bpm
           break
-        case 'TSRC': metadata.isrc = value; break
-        case 'APIC': case 'PIC':
+        }
+        case 'TSRC':
+          metadata.isrc = value
+          break
+        case 'APIC':
+        case 'PIC':
           // Picture handling - simplified
-          if (!metadata.coverArt) metadata.coverArt = []
+          if (!metadata.coverArt)
+            metadata.coverArt = []
           // Would need more parsing for actual picture data
           break
       }

@@ -353,13 +353,24 @@ export class FlacDemuxer extends Demuxer {
       let blockSize: number
 
       switch (blockSizeCode) {
-        case 0: blockSize = 0; break
-        case 1: blockSize = 192; break
-        case 2: case 3: case 4: case 5:
+        case 0:
+          blockSize = 0
+          break
+        case 1:
+          blockSize = 192
+          break
+        case 2:
+        case 3:
+        case 4:
+        case 5:
           blockSize = 576 * (1 << (blockSizeCode - 2))
           break
-        case 6: blockSize = 0; break // Read from end of header
-        case 7: blockSize = 0; break // Read from end of header
+        case 6:
+          blockSize = 0 // Read from end of header
+          break
+        case 7:
+          blockSize = 0 // Read from end of header
+          break
         default:
           blockSize = 256 * (1 << (blockSizeCode - 8))
       }

@@ -315,7 +315,7 @@
 
 - Chris ([@chrisbbreuer](http://github.com/chrisbbreuer))
 
-## v0.1.0...main
+## v0.1.0...main (rpx)
 
 [compare changes](https://github.com/stacksjs/rpx/compare/v0.1.0...main)
 
@@ -373,7 +373,7 @@
 
 - Chris <chrisbreuer93@gmail.com>
 
-## ...main
+## ...main (rpx)
 
 ### 🏡 Chore
 

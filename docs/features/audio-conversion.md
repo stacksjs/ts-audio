@@ -252,14 +252,14 @@ catch (error) {
 4. **Use Streams for Large Files**: Stream processing is more memory-efficient
 5. **Set Appropriate Bitrates**: Higher bitrates mean better quality but larger files
 6. **Format Selection**
-   - Use WAV for lossless quality
-   - Use MP3 for size efficiency
-   - Use AAC for modern compatibility
+  - Use WAV for lossless quality
+  - Use MP3 for size efficiency
+  - Use AAC for modern compatibility
 7. **Quality Optimization**
-   - Match sample rate to content type
-   - Choose appropriate bitrates
-   - Consider target platform requirements
+  - Match sample rate to content type
+  - Choose appropriate bitrates
+  - Consider target platform requirements
 8. **Performance**
-   - Use batch processing for multiple files
-   - Monitor system resources
-   - Implement proper error handling
+  - Use batch processing for multiple files
+  - Monitor system resources
+  - Implement proper error handling

@@ -59,24 +59,24 @@ Comprehensive guide to working with audio metadata:
 When working with advanced features, keep these principles in mind:
 
 1. **Performance First**
-   - Always consider memory usage
-   - Implement proper cleanup
-   - Use appropriate buffer sizes
+  - Always consider memory usage
+  - Implement proper cleanup
+  - Use appropriate buffer sizes
 
 2. **Error Handling**
-   - Implement comprehensive error handling
-   - Use appropriate recovery strategies
-   - Log errors effectively
+  - Implement comprehensive error handling
+  - Use appropriate recovery strategies
+  - Log errors effectively
 
 3. **Resource Management**
-   - Clean up resources properly
-   - Monitor system resources
-   - Implement proper timeouts
+  - Clean up resources properly
+  - Monitor system resources
+  - Implement proper timeouts
 
 4. **Code Organization**
-   - Follow TypeScript best practices
-   - Maintain clear documentation
-   - Use consistent patterns
+  - Follow TypeScript best practices
+  - Maintain clear documentation
+  - Use consistent patterns
 
 ## Contributing
 

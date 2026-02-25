@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { CLI } from '@stacksjs/clapp'
 import { version } from '../../../package.json'
 import { Input, Output, Conversion, createSource, BufferTarget, formatDuration, formatFileSize, formatBitrate, formatSampleRate, getChannelLayoutName } from '../src'
