@@ -117,7 +117,8 @@ export class WavDemuxer extends Demuxer {
     const riffMagic = await this.reader.readU32BE()
     if (riffMagic === RF64_MAGIC) {
       this.isRf64 = true
-    } else if (riffMagic !== RIFF_MAGIC) {
+    }
+    else if (riffMagic !== RIFF_MAGIC) {
       throw new Error('Invalid WAV file: missing RIFF/RF64 header')
     }
 
@@ -141,7 +142,8 @@ export class WavDemuxer extends Demuxer {
       if (ds64Id === DS64_MAGIC && ds64Size !== null) {
         await this.parseDs64Chunk(ds64Size)
         fileSize = Number(this.ds64!.riffSize & 0xFFFFFFFFn)
-      } else {
+      }
+      else {
         throw new Error('Invalid RF64 file: ds64 chunk must be first')
       }
     }
@@ -168,14 +170,17 @@ export class WavDemuxer extends Demuxer {
 
       if (chunkId === FMT_MAGIC) {
         await this.parseFmtChunk(chunkSize)
-      } else if (chunkId === DATA_MAGIC) {
+      }
+      else if (chunkId === DATA_MAGIC) {
         const actualSize = this.isRf64 && this.ds64 && chunkSize === RF64_SIZE_PLACEHOLDER
           ? Number(this.ds64.dataSize)
           : chunkSize
         this.dataChunk = { id: chunkId, size: actualSize, offset: chunkOffset }
-      } else if (chunkId === DS64_MAGIC) {
+      }
+      else if (chunkId === DS64_MAGIC) {
         // Already parsed above for RF64
-      } else if (chunkId === LIST_MAGIC) {
+      }
+      else if (chunkId === LIST_MAGIC) {
         const listType = await this.reader.readU32BE()
         if (listType === INFO_MAGIC) {
           infoChunk = await this.parseInfoChunk(chunkSize - 4)
@@ -194,7 +199,8 @@ export class WavDemuxer extends Demuxer {
       if (infoChunk[tag]) {
         if (key === 'trackNumber') {
           metadata.trackNumber = Number.parseInt(infoChunk[tag], 10)
-        } else {
+        }
+        else {
           (metadata as Record<string, unknown>)[key] = infoChunk[tag]
         }
       }
@@ -572,7 +578,8 @@ export class AutoWavMuxer extends Muxer {
   protected async writeTrailer(): Promise<void> {
     if (this.needsRf64) {
       await this.writeRf64Trailer()
-    } else {
+    }
+    else {
       await this.writeWavTrailer()
     }
   }

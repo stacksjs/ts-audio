@@ -285,7 +285,8 @@ export class AacMuxer extends Muxer {
     // Check if packet already has ADTS header
     if (packet.data[0] === 0xFF && (packet.data[1] & 0xF0) === 0xF0) {
       this.packets.push(packet.data)
-    } else {
+    }
+    else {
       // Add ADTS header to raw AAC frame
       const sampleRateIndex = getSampleRateIndex(this.sampleRate)
       const frameLength = 7 + packet.data.length

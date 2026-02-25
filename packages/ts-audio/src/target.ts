@@ -48,7 +48,8 @@ export async function writeToTarget(target: Target, data: Uint8Array): Promise<v
     const Bun = globalThis.Bun
     if (Bun) {
       await Bun.write(target.path, data)
-    } else {
+    }
+    else {
       const fs = await import('node:fs/promises')
       await fs.writeFile(target.path, data)
     }

@@ -262,9 +262,11 @@ export class BitWriter {
   writeSExpGolomb(value: number): void {
     if (value === 0) {
       this.writeUExpGolomb(0)
-    } else if (value > 0) {
+    }
+    else if (value > 0) {
       this.writeUExpGolomb(value * 2 - 1)
-    } else {
+    }
+    else {
       this.writeUExpGolomb(-value * 2)
     }
   }
@@ -344,7 +346,8 @@ export function crc8(data: Uint8Array, poly = 0x07): number {
     for (let i = 0; i < 8; i++) {
       if (crc & 0x80) {
         crc = ((crc << 1) ^ poly) & 0xFF
-      } else {
+      }
+      else {
         crc = (crc << 1) & 0xFF
       }
     }
@@ -359,7 +362,8 @@ export function crc16(data: Uint8Array, poly = 0x8005, init = 0): number {
     for (let i = 0; i < 8; i++) {
       if (crc & 0x8000) {
         crc = ((crc << 1) ^ poly) & 0xFFFF
-      } else {
+      }
+      else {
         crc = (crc << 1) & 0xFFFF
       }
     }
@@ -374,7 +378,8 @@ export function crc32(data: Uint8Array, poly = 0xEDB88320, init = 0xFFFFFFFF): n
     for (let i = 0; i < 8; i++) {
       if (crc & 1) {
         crc = (crc >>> 1) ^ poly
-      } else {
+      }
+      else {
         crc = crc >>> 1
       }
     }

@@ -2,7 +2,7 @@
 
 [![npm version][npm-version-src]][npm-version-href]
 [![GitHub Actions][github-actions-src]][github-actions-href]
-[![Commitizen friendly](https://img.shields.io/badge/commitizen-friendly-brightgreen.svg)](http://commitizen.github.io/cz-cli/)
+[![Commitizen friendly][commitizen-friendly]][commitizen-href]
 <!-- [![npm downloads][npm-downloads-src]][npm-downloads-href] -->
 <!-- [![Codecov][codecov-src]][codecov-href] -->
 
@@ -275,21 +275,21 @@ bun test
 
 ## Changelog
 
-Please see our [releases](https://github.com/stacksjs/stacks/releases) page for more information on what has changed recently.
+Please see our [releases][releases] page for more information on what has changed recently.
 
 ## Contributing
 
-Please review the [Contributing Guide](https://github.com/stacksjs/contributing) for details.
+Please review the [Contributing Guide][contributing-guide] for details.
 
 ## Community
 
 For help, discussion about best practices, or any other conversation that would benefit from being searchable:
 
-[Discussions on GitHub](https://github.com/stacksjs/stacks/discussions)
+[Discussions on GitHub][discussions-on-github]
 
 For casual chit-chat with others using this package:
 
-[Join the Stacks Discord Server](https://discord.gg/stacksjs)
+[Join the Stacks Discord Server][join-the-stacks-discord-server]
 
 ## Postcardware
 
@@ -301,18 +301,18 @@ Our address: Stacks.js, 12665 Village Ln #2306, Playa Vista, CA 90094 🌎
 
 We would like to extend our thanks to the following sponsors for funding Stacks development. If you are interested in becoming a sponsor, please reach out to us.
 
-- [JetBrains](https://www.jetbrains.com/)
-- [The Solana Foundation](https://solana.com/)
+- [JetBrains][jetbrains]
+- [The Solana Foundation][the-solana-foundation]
 
 ## Credits
 
-- [`bun-ffmpeg`](https://github.com/KenjiGinjo/bun-ffmpeg)
-- [Chris Breuer](https://github.com/chrisbbreuer)
-- [All Contributors](../../contributors)
+- [`bun-ffmpeg`][bun-ffmpeg]
+- [Chris Breuer][chris-breuer]
+- [All Contributors][all-contributors]
 
 ## License
 
-The MIT License (MIT). Please see [LICENSE](https://github.com/stacksjs/stacks/tree/main/LICENSE.md) for more information.
+The MIT License (MIT). Please see [LICENSE][license] for more information.
 
 Made with 💙
 
@@ -324,3 +324,15 @@ Made with 💙
 
 <!-- [codecov-src]: https://img.shields.io/codecov/c/gh/stacksjs/audiox/main?style=flat-square
 [codecov-href]: https://codecov.io/gh/stacksjs/audiox -->
+[commitizen-friendly]: https://img.shields.io/badge/commitizen-friendly-brightgreen.svg
+[releases]: https://github.com/stacksjs/stacks/releases
+[contributing-guide]: https://github.com/stacksjs/contributing
+[discussions-on-github]: https://github.com/stacksjs/stacks/discussions
+[join-the-stacks-discord-server]: https://discord.gg/stacksjs
+[jetbrains]: https://www.jetbrains.com/
+[the-solana-foundation]: https://solana.com/
+[bun-ffmpeg]: https://github.com/KenjiGinjo/bun-ffmpeg
+[chris-breuer]: https://github.com/chrisbbreuer
+[all-contributors]: ../../contributors
+[license]: https://github.com/stacksjs/stacks/tree/main/LICENSE.md
+[commitizen-href]: http://commitizen.github.io/cz-cli/

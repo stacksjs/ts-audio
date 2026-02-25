@@ -43,11 +43,13 @@ export class Writer {
       const Bun = globalThis.Bun
       if (Bun) {
         // Will write all at once on close
-      } else {
+      }
+      else {
         const fs = await import('node:fs/promises')
         this.fileHandle = await fs.open(this.target.path, 'w')
       }
-    } else if (this.target.type === 'stream') {
+    }
+    else if (this.target.type === 'stream') {
       this.streamWriter = this.target.stream.getWriter()
     }
   }
@@ -55,7 +57,8 @@ export class Writer {
   async writeBytes(data: Uint8Array): Promise<void> {
     if (this.target.type === 'stream' && this.streamWriter) {
       await this.streamWriter.write(data)
-    } else {
+    }
+    else {
       this.buffers.push(data.slice())
     }
     this._position += data.length
@@ -244,13 +247,15 @@ export class Writer {
       const Bun = globalThis.Bun
       if (Bun) {
         await Bun.write(this.target.path, data)
-      } else if (this.fileHandle) {
+      }
+      else if (this.fileHandle) {
         const handle = this.fileHandle as { write: (data: Uint8Array) => Promise<unknown>, close: () => Promise<void> }
         await handle.write(data)
         await handle.close()
       }
       return data
-    } else if (this.target.type === 'stream' && this.streamWriter) {
+    }
+    else if (this.target.type === 'stream' && this.streamWriter) {
       await this.streamWriter.close()
       return new Uint8Array(0)
     }

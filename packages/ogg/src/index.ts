@@ -125,7 +125,8 @@ function parseVorbisComment(data: Uint8Array): VorbisComment | null {
       return null
     }
     data = data.subarray(8)
-  } else {
+  }
+  else {
     data = data.subarray(7)
   }
 

@@ -18,7 +18,7 @@ export interface ConversionInitOptions {
 /**
  * Progress callback type
  */
-export type ProgressCallback = (progress: ConversionProgress) => void
+export type ProgressCallback = (_progress: ConversionProgress) => void
 
 /**
  * Audio conversion class

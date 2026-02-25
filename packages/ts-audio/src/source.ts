@@ -75,7 +75,8 @@ export async function getSourceSize(source: Source): Promise<number | null> {
     if (Bun) {
       const file = Bun.file(source.path)
       return file.size
-    } else {
+    }
+    else {
       const fs = await import('node:fs/promises')
       const stat = await fs.stat(source.path)
       return stat.size
@@ -90,7 +91,8 @@ export async function getSourceSize(source: Source): Promise<number | null> {
       })
       const contentLength = response.headers.get('content-length')
       return contentLength ? Number.parseInt(contentLength, 10) : null
-    } catch {
+    }
+    catch {
       return null
     }
   }
@@ -113,7 +115,8 @@ export async function readSourceBuffer(source: Source): Promise<Uint8Array> {
       const file = Bun.file(source.path)
       const buffer = await file.arrayBuffer()
       return new Uint8Array(buffer)
-    } else {
+    }
+    else {
       const fs = await import('node:fs/promises')
       const buffer = await fs.readFile(source.path)
       return new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength)
@@ -163,7 +166,8 @@ export function createReadStream(source: Source): ReadableStream<Uint8Array> {
         const data = await readSourceBuffer(source)
         controller.enqueue(data)
         controller.close()
-      } catch (error) {
+      }
+      catch (error) {
         controller.error(error)
       }
     },

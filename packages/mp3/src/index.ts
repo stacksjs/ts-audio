@@ -106,7 +106,8 @@ function parseFrameHeader(data: Uint8Array, offset: number): Mp3FrameHeader | nu
   let frameSize: number
   if (layer === 'Layer1') {
     frameSize = Math.floor((12 * bitrate * 1000 / sampleRate + (paddingBit ? 1 : 0)) * 4)
-  } else {
+  }
+  else {
     const slotSize = layer === 'Layer3' && version !== 'MPEG1' ? 72 : 144
     frameSize = Math.floor(slotSize * bitrate * 1000 / sampleRate + (paddingBit ? 1 : 0))
   }
@@ -203,10 +204,12 @@ function parseID3v2(data: Uint8Array): ID3v2Tag | null {
                   ((data[pos + 2] & 0x7F) << 7) |
                   (data[pos + 3] & 0x7F)
       pos += 4
-    } else if (major === 3) {
+    }
+    else if (major === 3) {
       frameSize = (data[pos] << 24) | (data[pos + 1] << 16) | (data[pos + 2] << 8) | data[pos + 3]
       pos += 4
-    } else {
+    }
+    else {
       frameSize = (data[pos] << 16) | (data[pos + 1] << 8) | data[pos + 2]
       pos += 3
     }

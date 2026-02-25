@@ -69,18 +69,21 @@ export class Reader {
       const data = this.source.data
       this.sourceData = data instanceof ArrayBuffer ? new Uint8Array(data) : data
       this.fileSize = this.sourceData.length
-    } else if (this.source.type === 'file') {
+    }
+    else if (this.source.type === 'file') {
       const Bun = globalThis.Bun
       if (Bun) {
         const file = Bun.file(this.source.path)
         this.fileHandle = file
         this.fileSize = file.size
-      } else {
+      }
+      else {
         const fs = await import('node:fs/promises')
         const stat = await fs.stat(this.source.path)
         this.fileSize = stat.size
       }
-    } else if (this.source.type === 'url') {
+    }
+    else if (this.source.type === 'url') {
       const response = await fetch(this.source.url, {
         method: 'HEAD',
         headers: this.source.headers,
@@ -129,14 +132,16 @@ export class Reader {
       if (!this.sourceData) await this.init()
       const end = Math.min(offset + length, this.sourceData!.length)
       bytes = this.sourceData!.subarray(offset, end)
-    } else if (this.source.type === 'file') {
+    }
+    else if (this.source.type === 'file') {
       const Bun = globalThis.Bun
       if (Bun && this.fileHandle) {
         const file = this.fileHandle as { slice: (start: number, end: number) => { arrayBuffer: () => Promise<ArrayBuffer> } }
         const slice = file.slice(offset, offset + length)
         const buffer = await slice.arrayBuffer()
         bytes = new Uint8Array(buffer)
-      } else {
+      }
+      else {
         const fs = await import('node:fs/promises')
         const handle = await fs.open(this.source.path, 'r')
         const buffer = Buffer.alloc(length)
@@ -144,7 +149,8 @@ export class Reader {
         await handle.close()
         bytes = new Uint8Array(buffer.buffer, buffer.byteOffset, bytesRead)
       }
-    } else if (this.source.type === 'url') {
+    }
+    else if (this.source.type === 'url') {
       const response = await fetch(this.source.url, {
         headers: {
           ...this.source.headers,
@@ -153,9 +159,11 @@ export class Reader {
       })
       const buffer = await response.arrayBuffer()
       bytes = new Uint8Array(buffer)
-    } else if (this.source.type === 'stream') {
+    }
+    else if (this.source.type === 'stream') {
       throw new Error('Stream source does not support random access')
-    } else {
+    }
+    else {
       throw new Error('Unknown source type')
     }
 

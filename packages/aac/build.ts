@@ -1,3 +1,4 @@
+/* eslint-disable no-console, ts/no-top-level-await */
 import { build } from 'bun'
 import dts from 'bun-plugin-dtsx'
 

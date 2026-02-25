@@ -24,7 +24,8 @@ export function parseDuration(duration: string): number {
     const parts = duration.split(':').map(Number)
     if (parts.length === 3) {
       return parts[0] * 3600 + parts[1] * 60 + parts[2]
-    } else if (parts.length === 2) {
+    }
+    else if (parts.length === 2) {
       return parts[0] * 60 + parts[1]
     }
   }
@@ -290,7 +291,8 @@ export function resampleLinear(
 
     if (srcIndexInt + 1 < samples.length) {
       result[i] = samples[srcIndexInt] * (1 - frac) + samples[srcIndexInt + 1] * frac
-    } else {
+    }
+    else {
       result[i] = samples[srcIndexInt]
     }
   }
@@ -335,7 +337,8 @@ export function memoizeAsync<T extends (...args: unknown[]) => Promise<unknown>>
     cache.set(key, promise)
     try {
       return await promise
-    } catch (error) {
+    }
+    catch (error) {
       cache.delete(key)
       throw error
     }

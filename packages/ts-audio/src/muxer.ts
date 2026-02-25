@@ -27,7 +27,8 @@ export class AsyncMutex {
     if (this.queue.length > 0) {
       const next = this.queue.shift()!
       next()
-    } else {
+    }
+    else {
       this.locked = false
     }
   }
@@ -36,7 +37,8 @@ export class AsyncMutex {
     await this.acquire()
     try {
       return await fn()
-    } finally {
+    }
+    finally {
       this.release()
     }
   }
