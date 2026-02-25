@@ -51,7 +51,7 @@ export abstract class Muxer {
   protected writer: Writer
   protected tracks: OutputAudioTrack[] = []
   protected metadata: AudioMetadata = {}
-  protected mutex = new AsyncMutex()
+  protected mutex: AsyncMutex = new AsyncMutex()
   private nextTrackId = 1
   private headerWritten = false
   private finalized = false

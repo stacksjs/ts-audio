@@ -347,7 +347,7 @@ export class OggDemuxer extends Demuxer {
 
     // Select primary stream
     if (this.streams.size > 0) {
-      this.primaryStream = this.streams.values().next().value
+      this.primaryStream = this.streams.values().next().value ?? null
     }
   }
 
@@ -521,8 +521,8 @@ export class OggOutputFormat extends OutputFormat {
   }
 }
 
-export const OGG = new OggInputFormat()
-export const OGG_OUTPUT = new OggOutputFormat()
+export const OGG: OggInputFormat = new OggInputFormat()
+export const OGG_OUTPUT: OggOutputFormat = new OggOutputFormat()
 
 // Export types and utilities
 export type { OggPage, OggStream, OggPacket }

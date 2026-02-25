@@ -723,9 +723,9 @@ export class AutoWavOutputFormat extends OutputFormat {
   }
 }
 
-export const WAV = new WavInputFormat()
-export const WAV_OUTPUT = new WavOutputFormat()
-export const RF64_OUTPUT = new Rf64OutputFormat()
-export const AUTO_WAV_OUTPUT = new AutoWavOutputFormat()
+export const WAV: WavInputFormat = new WavInputFormat()
+export const WAV_OUTPUT: WavOutputFormat = new WavOutputFormat()
+export const RF64_OUTPUT: Rf64OutputFormat = new Rf64OutputFormat()
+export const AUTO_WAV_OUTPUT: AutoWavOutputFormat = new AutoWavOutputFormat()
 
 export type { WavFormat, RiffChunk, Ds64Chunk }

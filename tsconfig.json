@@ -19,5 +19,10 @@
     "verbatimModuleSyntax": true,
     "skipDefaultLibCheck": true,
     "skipLibCheck": true
-  }
+  },
+  "exclude": [
+    "buddy-bot.config.ts",
+    "clarity.config.ts",
+    "docs/**"
+  ]
 }

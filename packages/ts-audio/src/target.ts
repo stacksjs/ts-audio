@@ -2,7 +2,7 @@
  * Target abstractions for audio output
  */
 
-import type { Target, BufferTarget, FileTarget, StreamTarget } from './types'
+import type { Target, BufferTarget as BufferTargetType, FileTarget, StreamTarget } from './types'
 
 /**
  * Create a target from various output types
@@ -17,7 +17,7 @@ export function createTarget(output: string | Target): Target {
 /**
  * Create a buffer target
  */
-export function bufferTarget(): BufferTarget {
+export function bufferTarget(): BufferTargetType {
   return { type: 'buffer' }
 }
 
@@ -99,4 +99,4 @@ export function createWriteStream(target: Target): WritableStream<Uint8Array> {
 /**
  * BufferTarget constant for convenience
  */
-export const BufferTarget: BufferTarget = { type: 'buffer' }
+export const BufferTarget: BufferTargetType = { type: 'buffer' }

@@ -1,6 +1,7 @@
 /* eslint-disable no-console */
 import { CLI } from '@stacksjs/clapp'
 import { version } from '../../../package.json'
+import type { OutputFormat } from '../src'
 import { Input, Output, Conversion, createSource, BufferTarget, formatDuration, formatFileSize, formatBitrate, formatSampleRate, getChannelLayoutName } from '../src'
 
 const cli = new CLI('ts-audio')
@@ -116,7 +117,7 @@ cli
           throw new Error(`Unsupported output format: ${outputExt}`)
       }
 
-      const outputFile = new Output({ format: outputFormat })
+      const outputFile = new Output({ format: outputFormat as unknown as OutputFormat })
 
       const conversionOptions: Record<string, unknown> = {}
       if (options.codec) conversionOptions.audioCodec = options.codec
@@ -248,7 +249,7 @@ cli
           jsonMetadata.coverArt = jsonMetadata.coverArt.map(art => ({
             ...art,
             data: `base64:${Buffer.from(art.data).toString('base64').substring(0, 100)}...`,
-          })) as typeof jsonMetadata.coverArt
+          })) as unknown as typeof jsonMetadata.coverArt
         }
         console.log(JSON.stringify(jsonMetadata, null, 2))
       }

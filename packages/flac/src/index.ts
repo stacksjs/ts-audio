@@ -545,8 +545,8 @@ export class FlacOutputFormat extends OutputFormat {
   }
 }
 
-export const FLAC = new FlacInputFormat()
-export const FLAC_OUTPUT = new FlacOutputFormat()
+export const FLAC: FlacInputFormat = new FlacInputFormat()
+export const FLAC_OUTPUT: FlacOutputFormat = new FlacOutputFormat()
 
 // Export types and utilities
 export type { MetadataBlock, FlacFrame }

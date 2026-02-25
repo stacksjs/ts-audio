@@ -7,7 +7,7 @@ import type { Source, Target, AudioTrack, EncodedPacket } from 'ts-audio'
 import { InputFormat, OutputFormat, Demuxer, Muxer, Reader } from 'ts-audio'
 
 // AAC sample rates
-const AAC_SAMPLE_RATES = [
+const AAC_SAMPLE_RATES: (number | null)[] = [
   96000, 88200, 64000, 48000, 44100, 32000,
   24000, 22050, 16000, 12000, 11025, 8000, 7350,
   null, null, null,
@@ -337,8 +337,8 @@ export class AacOutputFormat extends OutputFormat {
   }
 }
 
-export const AAC = new AacInputFormat()
-export const AAC_OUTPUT = new AacOutputFormat()
+export const AAC: AacInputFormat = new AacInputFormat()
+export const AAC_OUTPUT: AacOutputFormat = new AacOutputFormat()
 
 // Export types
 export type { AdtsHeader, AdtsFrame, AacProfile }

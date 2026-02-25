@@ -92,7 +92,7 @@ class FormatRegistry {
 /**
  * Global format registry
  */
-export const formats = new FormatRegistry()
+export const formats: FormatRegistry = new FormatRegistry()
 
 /**
  * Re-export for convenience

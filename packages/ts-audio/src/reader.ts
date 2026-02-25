@@ -34,7 +34,7 @@ export class Reader {
   private fileHandle: unknown = null
   private fileSize: number | null = null
 
-  static readonly DEFAULT_SLICE_SIZE = 64 * 1024 // 64KB
+  static readonly DEFAULT_SLICE_SIZE: number = 64 * 1024 // 64KB
 
   constructor(source: Source) {
     this.source = source
@@ -298,7 +298,8 @@ export class Reader {
   async readString(length: number, encoding: 'utf-8' | 'ascii' | 'latin1' = 'utf-8'): Promise<string | null> {
     const bytes = await this.readBytes(length)
     if (!bytes) return null
-    const decoder = new TextDecoder(encoding)
+    const label: string = encoding === 'latin1' ? 'iso-8859-1' : encoding
+    const decoder = new TextDecoder(label as 'utf-8')
     return decoder.decode(bytes)
   }
 

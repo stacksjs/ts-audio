@@ -134,7 +134,7 @@ function parseID3v1(data: Uint8Array): ID3v1Tag | null {
     return null // "TAG" not found
   }
 
-  const decoder = new TextDecoder('latin1')
+  const decoder = new TextDecoder('iso-8859-1' as 'utf-8')
   const trimNull = (s: string) => s.replace(/\0+$/, '').trim()
 
   const title = trimNull(decoder.decode(data.subarray(offset + 3, offset + 33)))
@@ -242,7 +242,7 @@ function id3v2FrameToString(frame: ID3v2Frame): string {
   let decoder: TextDecoder
   switch (encoding) {
     case 0: // ISO-8859-1
-      decoder = new TextDecoder('latin1')
+      decoder = new TextDecoder('iso-8859-1' as 'utf-8')
       break
     case 1: // UTF-16 with BOM
     case 2: // UTF-16BE
@@ -573,8 +573,8 @@ export class Mp3OutputFormat extends OutputFormat {
   }
 }
 
-export const MP3 = new Mp3InputFormat()
-export const MP3_OUTPUT = new Mp3OutputFormat()
+export const MP3: Mp3InputFormat = new Mp3InputFormat()
+export const MP3_OUTPUT: Mp3OutputFormat = new Mp3OutputFormat()
 
 // Re-export types
 export type { Mp3FrameHeader, Mp3Frame, ID3v1Tag, ID3v2Tag, ID3v2Frame }
