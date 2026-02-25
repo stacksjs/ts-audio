@@ -1,6 +1,6 @@
 ## Code Style Guidelines
 
-**Scope:** All files matching `**/*.{ts,tsx}`
+**Scope:**All files matching `**/*.{ts,tsx}`
 
 **Purpose:** Code Style & Structure specifics
 
@@ -52,6 +52,7 @@
 
   ```ts
   /**
+
    * Loads configuration from a file or remote endpoint
    * @param options - Configuration options
    * @param options.name - Name of the config file
@@ -61,10 +62,11 @@
    * @example
    * ```ts
    * const config = await loadConfig({
-   *   name: 'myapp',
-   *   defaultConfig: { port: 3000 }
+   * name: 'myapp',
+   * defaultConfig: { port: 3000 }
    * })
    * ```
+
    */
   async function loadConfig<T>(options: Config<T>): Promise<T>
   ```
@@ -110,7 +112,7 @@
 
 ## Documentation Guidelines
 
-**Scope:** All files matching `**/*.{ts,tsx,md}`
+**Scope:**All files matching `**/*.{ts,tsx,md}`
 
 **Purpose:** Documentation specific rules
 
@@ -189,7 +191,7 @@
 
 ## Error Handling Guidelines
 
-**Scope:** All files matching `**/*.{ts,tsx}`
+**Scope:**All files matching `**/*.{ts,tsx}`
 
 **Purpose:** Error Handling and Validation specifics
 
@@ -229,7 +231,7 @@
   ```ts
   throw new ConfigError(
     `Failed to load config file: ${filePath}`,
-    'CONFIG_LOAD_ERROR',
+    'CONFIG*LOAD*ERROR',
     { cause: error }
   )
   ```
@@ -244,8 +246,8 @@
     }
     catch (error) {
       if (error instanceof SyntaxError)
-        throw new ConfigError('Invalid JSON in config file', 'PARSE_ERROR')
-      throw new ConfigError('Failed to read config file', 'READ_ERROR')
+        throw new ConfigError('Invalid JSON in config file', 'PARSE*ERROR')
+      throw new ConfigError('Failed to read config file', 'READ*ERROR')
     }
   }
   ```
@@ -284,14 +286,14 @@
 
   function validateConfig(config: unknown): Result<Config, ConfigError> {
     if (!isValidConfig(config))
-      return err(new ConfigError('Invalid config format', 'VALIDATION_ERROR'))
+      return err(new ConfigError('Invalid config format', 'VALIDATION*ERROR'))
     return ok(config)
   }
   ```
 
 ## Key Conventions
 
-**Scope:** All files matching `**/*.{ts,tsx}`
+**Scope:**All files matching `**/*.{ts,tsx}`
 
 **Purpose:** Key Conventions specifics
 
@@ -389,7 +391,7 @@
 
 ### Project Structure
 
-**Scope:** All files matching `**/*`
+**Scope:**All files matching `**/*`
 
 **Purpose:** Project Structure specifics
 
@@ -569,17 +571,21 @@ dist/
   ```ts
   // Good
   /**
+
    * Loads configuration from a file
    * @param options - Configuration options
    * @returns Resolved configuration
+
    */
   function loadConfig(options: Config): Promise<unknown>
 
   // Avoid
   /**
+
    * Loads configuration from a file
    * @param options Configuration options
    * @returns Resolved configuration
+
    */
   function loadConfig(options: Config): Promise<unknown>
   ```
@@ -692,7 +698,7 @@ dist/
   })
   ```
 
-  ## TypeScript Usage
+## TypeScript Usage
 
 - Use interfaces for configuration objects and public APIs
 
@@ -716,7 +722,7 @@ dist/
 
   ```ts
   // Good
-  const CONFIG_EXTENSIONS = ['.ts', '.js', '.mjs', '.cjs', '.json'] as const
+  const CONFIG*EXTENSIONS = ['.ts', '.js', '.mjs', '.cjs', '.json'] as const
 
   // Avoid
   enum ConfigExtensions {
@@ -777,8 +783,8 @@ dist/
 - Audio optimizations and conversions
 - Stream-based processing support
 - Metadata handling
-- Multiple output formats _(WAV, MP3, AAC)_
-- Configurable audio properties _(bitrate, channels, sample rate)_
+- Multiple output formats *(WAV, MP3, AAC)*
+- Configurable audio properties *(bitrate, channels, sample rate)*
 - Error handling and detailed logging
 - Fully typed with TypeScript
 
@@ -801,7 +807,7 @@ import { audio, audioInfo } from '@stacksjs/audiox'
 
 // Basic audio conversion
 await audio('input.mp3', 'output.wav', {
-  codec: 'pcm_s16le',
+  codec: 'pcm*s16le',
   channels: 1,
   sampleRate: 16000,
   bitrate: '160k',
@@ -839,7 +845,7 @@ const file = Bun.file('input.mp3')
 const stream = file.stream()
 
 await audioWithStreamInput(stream, 'output.wav', {
-  codec: 'pcm_s16le',
+  codec: 'pcm*s16le',
   bitrate: '128k',
   channels: 1,
   sampleRate: 16000,
@@ -886,7 +892,7 @@ audiox info input.mp3
 audiox convert <input> <output> [options]
 
 Options:
-  --codec <codec>           Audio codec (aac, mp3, pcm_s16le)
+  --codec <codec>           Audio codec (aac, mp3, pcm*s16le)
   --bitrate <bitrate>       Audio bitrate (e.g., "192k")
   --channels <number>       Number of channels (1, 2, 5.1, 7.1)
   --sample-rate <rate>      Sample rate (8000, 16000, 44100, 48000)
@@ -900,7 +906,7 @@ Options:
 Convert to WAV with specific settings:
 
 ```bash
-audiox convert input.mp3 output.wav --codec pcm_s16le --channels 1 --sample-rate 16000 --bitrate 128k
+audiox convert input.mp3 output.wav --codec pcm*s16le --channels 1 --sample-rate 16000 --bitrate 128k
 ```
 
 Convert to MP3 with metadata:
@@ -957,7 +963,7 @@ await audioWithStreamOut(
     },
   },
   {
-    codec: 'pcm_s16le',
+    codec: 'pcm*s16le',
     bitrate: '128k',
     channels: 1,
     sampleRate: 16000,
@@ -1016,7 +1022,7 @@ export default config
 
 ```ts
 interface AudioxOptions {
-  codec?: 'aac' | 'mp3' | 'pcm_s16le' | string
+  codec?: 'aac' | 'mp3' | 'pcm*s16le' | string
   bitrate?: string // e.g., "192k"
   channels?: 1 | 2 | 5.1 | 7.1 | number
   sampleRate?: 8000 | 16000 | 44100 | 48000 | number

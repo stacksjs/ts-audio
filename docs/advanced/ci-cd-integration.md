@@ -12,7 +12,9 @@ name: Audio Processing
 on:
   push:
     paths:
+
       - 'audio/**'
+
   workflow_dispatch:
 
 jobs:
@@ -20,25 +22,31 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+
       - uses: actions/checkout@v4
 
       - name: Install FFmpeg
+
         run: |
           sudo apt-get update
           sudo apt-get install -y ffmpeg
 
       - name: Setup Bun
+
         uses: oven-sh/setup-bun@v1
         with:
           bun-version: latest
 
       - name: Install dependencies
+
         run: bun install
 
       - name: Install audiox
+
         run: bun add -g @stacksjs/audiox
 
       - name: Process audio files
+
         run: |
           mkdir -p processed
           for file in audio/*.wav; do
@@ -48,6 +56,7 @@ jobs:
           done
 
       - name: Upload processed audio
+
         uses: actions/upload-artifact@v4
         with:
           name: processed-audio
@@ -62,6 +71,7 @@ name: Validate Audio Files
 on:
   pull_request:
     paths:
+
       - 'assets/audio/**'
 
 jobs:
@@ -69,18 +79,23 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+
       - uses: actions/checkout@v4
 
       - name: Install FFmpeg
+
         run: sudo apt-get install -y ffmpeg
 
       - name: Setup Bun
+
         uses: oven-sh/setup-bun@v1
 
       - name: Install dependencies
+
         run: bun install
 
       - name: Validate audio files
+
         run: |
           bun run << 'EOF'
           import { audioInfo } from '@stacksjs/audiox'
@@ -131,6 +146,7 @@ on:
         default: 'medium'
         type: choice
         options:
+
           - low
           - medium
           - high
@@ -143,18 +159,23 @@ jobs:
         format: [mp3, aac]
 
     steps:
+
       - uses: actions/checkout@v4
 
       - name: Install FFmpeg
+
         run: sudo apt-get install -y ffmpeg
 
       - name: Setup Bun
+
         uses: oven-sh/setup-bun@v1
 
       - name: Install audiox
+
         run: bun add -g @stacksjs/audiox
 
       - name: Set quality settings
+
         id: quality
         run: |
           case "${{ github.event.inputs.quality }}" in
@@ -170,9 +191,10 @@ jobs:
           esac
 
       - name: Process audio
+
         run: |
           mkdir -p output/${{ matrix.format }}
-          for file in input/*.wav; do
+          for file in input/_.wav; do
             audiox convert "$file" \
               "output/${{ matrix.format }}/$(basename "${file%.wav}.${{ matrix.format }}")" \
               --codec ${{ matrix.format }} \
@@ -180,6 +202,7 @@ jobs:
           done
 
       - name: Upload artifacts
+
         uses: actions/upload-artifact@v4
         with:
           name: audio-${{ matrix.format }}
@@ -193,6 +216,7 @@ jobs:
 ```yaml
 # .gitlab-ci.yml
 stages:
+
   - validate
   - process
   - deploy
@@ -205,12 +229,16 @@ validate-audio:
   stage: validate
   image: node:20
   before_script:
+
     - apt-get update && apt-get install -y ffmpeg
     - npm install -g bun
     - bun add -g @stacksjs/audiox
+
   script:
+
     - |
-      for file in $AUDIO_INPUT_DIR/*.wav; do
+
+      for file in $AUDIO_INPUT_DIR/_.wav; do
         audiox info "$file"
       done
 
@@ -218,20 +246,26 @@ process-audio:
   stage: process
   image: node:20
   before_script:
+
     - apt-get update && apt-get install -y ffmpeg
     - npm install -g bun
     - bun add -g @stacksjs/audiox
+
   script:
+
     - mkdir -p $AUDIO_OUTPUT_DIR
     - |
-      for file in $AUDIO_INPUT_DIR/*.wav; do
+
+      for file in $AUDIO_INPUT_DIR/_.wav; do
         audiox convert "$file" "$AUDIO_OUTPUT_DIR/$(basename "${file%.wav}.mp3")" \
           --codec mp3 \
           --bitrate 192k
       done
   artifacts:
     paths:
+
       - $AUDIO_OUTPUT_DIR/
+
     expire_in: 1 week
 
 deploy-audio:
@@ -239,10 +273,14 @@ deploy-audio:
   image: node:20
   needs: ['process-audio']
   script:
+
     - echo "Deploying processed audio files..."
-    # Add your deployment commands here
+
+# Add your deployment commands here
   only:
+
     - main
+
 ```
 
 ## Docker Integration
@@ -254,7 +292,7 @@ deploy-audio:
 FROM oven/bun:latest
 
 # Install FFmpeg
-RUN apt-get update && apt-get install -y ffmpeg && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y ffmpeg && rm -rf /var/lib/apt/lists/_
 
 # Install audiox globally
 RUN bun add -g @stacksjs/audiox
@@ -282,19 +320,26 @@ services:
   audio-processor:
     build: .
     volumes:
+
       - ./input:/app/input
       - ./output:/app/output
+
     environment:
+
       - AUDIO_QUALITY=high
       - OUTPUT_FORMAT=mp3
 
   audio-validator:
     build: .
     volumes:
+
       - ./output:/app/audio:ro
+
     command: bun run validate-audio.ts
     depends_on:
+
       - audio-processor
+
 ```
 
 ### Processing Script for Docker
@@ -354,9 +399,13 @@ main().catch(console.error)
 ```yaml
 # .pre-commit-config.yaml
 repos:
+
   - repo: local
+
     hooks:
+
       - id: validate-audio
+
         name: Validate Audio Files
         entry: bash -c 'for f in $(git diff --cached --name-only | grep -E "\.(mp3|wav|flac)$"); do audiox info "$f" || exit 1; done'
         language: system
@@ -390,25 +439,29 @@ name: Release
 on:
   push:
     tags:
-      - 'v*'
+
+      - 'v_'
 
 jobs:
   build-and-release:
     runs-on: ubuntu-latest
 
     steps:
+
       - uses: actions/checkout@v4
 
       - name: Install dependencies
+
         run: |
           sudo apt-get install -y ffmpeg
           npm install -g bun
           bun add -g @stacksjs/audiox
 
       - name: Process audio for release
+
         run: |
           mkdir -p dist/audio
-          for file in assets/audio/*.wav; do
+          for file in assets/audio/_.wav; do
             audiox convert "$file" "dist/audio/$(basename "${file%.wav}.mp3")" \
               --codec mp3 \
               --bitrate 320k \
@@ -416,6 +469,7 @@ jobs:
           done
 
       - name: Create release
+
         uses: softprops/action-gh-release@v1
         with:
           files: dist/audio/*

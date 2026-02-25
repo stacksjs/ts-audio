@@ -8,43 +8,55 @@ import type { AudioxOptions } from '@stacksjs/audiox'
 
 const config: AudioxOptions = {
   /**
-   * The audio codec to use.
-   * Default: 'mp3'
-   * Options: 'aac', 'mp3', 'pcm_s16le'
-   */
+
+   _ The audio codec to use.
+   _ Default: 'mp3'
+   _ Options: 'aac', 'mp3', 'pcm_s16le'
+
+   _/
   codec: 'mp3',
 
   /**
-   * The audio bitrate.
-   * Default: '192k'
-   * Example values: '128k', '256k', '320k'
-   */
+
+   _ The audio bitrate.
+   _ Default: '192k'
+   _ Example values: '128k', '256k', '320k'
+
+   _/
   bitrate: '192k',
 
   /**
-   * The number of audio channels.
-   * Default: 2
-   * Options: 1 (mono), 2 (stereo), 5.1 (surround), 7.1 (surround)
-   */
+
+   _ The number of audio channels.
+   _ Default: 2
+   _ Options: 1 (mono), 2 (stereo), 5.1 (surround), 7.1 (surround)
+
+   _/
   channels: 2,
 
   /**
-   * The audio sample rate in Hz.
-   * Default: 44100
-   * Common values: 8000, 16000, 44100, 48000
-   */
+
+   _ The audio sample rate in Hz.
+   _ Default: 44100
+   _ Common values: 8000, 16000, 44100, 48000
+
+   _/
   sampleRate: 44100,
 
   /**
-   * The audio quality setting (0-9).
-   * Lower values mean higher quality.
-   * Only applicable for certain codecs.
-   */
+
+   _ The audio quality setting (0-9).
+   _ Lower values mean higher quality.
+   _ Only applicable for certain codecs.
+
+   _/
   quality: 0,
 
   /**
-   * Default metadata to apply to converted files.
-   * These can be overridden per conversion.
+
+   _ Default metadata to apply to converted files.
+   _ These can be overridden per conversion.
+
    */
   metadata: {
     artist: 'Default Artist',
@@ -53,8 +65,10 @@ const config: AudioxOptions = {
   },
 
   /**
-   * Enable verbose output for debugging.
-   * Default: false
+
+   _ Enable verbose output for debugging.
+   _ Default: false
+
    */
   verbose: false,
 }
