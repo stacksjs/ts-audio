@@ -53,8 +53,8 @@
   },
   "devDependencies": {
     "@stacksjs/clapp": "^0.2.0",
-    "better-dx": "^0.2.5",
-    "bun-plugin-dtsx": "^0.9.9"
+    "better-dx": "^0.2.6",
+    "bun-plugin-dtsx": "^0.9.12"
   },
   "optionalDependencies": {
     "@ts-audio/mp3": "workspace:*",
