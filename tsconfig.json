@@ -18,7 +18,15 @@
     "isolatedDeclarations": true,
     "verbatimModuleSyntax": true,
     "skipDefaultLibCheck": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "paths": {
+      "ts-audio": ["./packages/ts-audio/src/index.ts"],
+      "@ts-audio/wav": ["./packages/wav/src/index.ts"],
+      "@ts-audio/mp3": ["./packages/mp3/src/index.ts"],
+      "@ts-audio/aac": ["./packages/aac/src/index.ts"],
+      "@ts-audio/flac": ["./packages/flac/src/index.ts"],
+      "@ts-audio/ogg": ["./packages/ogg/src/index.ts"]
+    }
   },
   "exclude": [
     "buddy-bot.config.ts",
