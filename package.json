@@ -51,8 +51,8 @@
     "preview:docs": "bun --bun bunpress preview docs"
   },
   "devDependencies": {
-    "better-dx": "^0.2.6",
-    "bun-plugin-dtsx": "^0.9.12",
+    "better-dx": "^0.2.7",
+    "bun-plugin-dtsx": "^0.9.13",
     "pickier": "^0.1.20"
   },
   "git-hooks": {
