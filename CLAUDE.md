@@ -2,7 +2,7 @@
 
 ## About
 
-Zero-dependency TypeScript audio toolkit for modern media workflows.
+A TypeScript audio processing library and CLI that wraps ffmpeg for optimizing and converting audio files in Bun/Node.js environments. It supports multiple output formats (WAV, MP3, AAC), stream-based processing, metadata handling, and configurable audio properties (bitrate, channels, sample rate). Can be used programmatically via the `audio()` and `audioInfo()` APIs or through the `audiox` CLI tool.
 
 ## Linting
 
