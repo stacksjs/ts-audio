@@ -52,7 +52,7 @@
   },
   "devDependencies": {
     "better-dx": "^0.2.7",
-    "bun-plugin-dtsx": "^0.9.12",
+    "bun-plugin-dtsx": "^0.21.17",
     "pickier": "^0.1.20"
   },
   "git-hooks": {
