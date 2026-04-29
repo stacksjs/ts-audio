@@ -12,7 +12,7 @@
       "name": "@ts-audio/aac",
       "version": "0.0.0",
       "devDependencies": {
-        "bun-plugin-dtsx": "^0.9.9",
+        "bun-plugin-dtsx": "^0.9.14",
         "ts-audio": "workspace:*",
       },
       "peerDependencies": {
@@ -23,7 +23,7 @@
       "name": "@ts-audio/flac",
       "version": "0.0.0",
       "devDependencies": {
-        "bun-plugin-dtsx": "^0.9.9",
+        "bun-plugin-dtsx": "^0.9.14",
         "ts-audio": "workspace:*",
       },
       "peerDependencies": {
@@ -34,7 +34,7 @@
       "name": "@ts-audio/mp3",
       "version": "0.0.0",
       "devDependencies": {
-        "bun-plugin-dtsx": "^0.9.9",
+        "bun-plugin-dtsx": "^0.9.14",
         "ts-audio": "workspace:*",
       },
       "peerDependencies": {
@@ -45,7 +45,7 @@
       "name": "@ts-audio/ogg",
       "version": "0.0.0",
       "devDependencies": {
-        "bun-plugin-dtsx": "^0.9.9",
+        "bun-plugin-dtsx": "^0.9.14",
         "ts-audio": "workspace:*",
       },
       "peerDependencies": {
@@ -60,8 +60,8 @@
       },
       "devDependencies": {
         "@stacksjs/clapp": "^0.2.0",
-        "better-dx": "^0.2.5",
-        "bun-plugin-dtsx": "^0.9.9",
+        "better-dx": "^0.2.7",
+        "bun-plugin-dtsx": "^0.9.14",
       },
       "optionalDependencies": {
         "@ts-audio/aac": "workspace:*",
@@ -75,7 +75,7 @@
       "name": "@ts-audio/wav",
       "version": "0.0.0",
       "devDependencies": {
-        "bun-plugin-dtsx": "^0.9.9",
+        "bun-plugin-dtsx": "^0.9.14",
         "ts-audio": "workspace:*",
       },
       "peerDependencies": {
