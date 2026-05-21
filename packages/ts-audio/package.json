@@ -52,7 +52,7 @@
     "typecheck": "bunx tsc --noEmit"
   },
   "devDependencies": {
-    "@stacksjs/clapp": "^0.2.0",
+    "@stacksjs/clapp": "^0.2.10",
     "better-dx": "^0.2.5",
     "bun-plugin-dtsx": "^0.9.9"
   },
