@@ -2,7 +2,7 @@
   "name": "@ts-audio/mp3",
   "type": "module",
   "sideEffects": false,
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "MP3 codec package for ts-audio - zero dependency TypeScript implementation.",
   "author": "Chris Breuer <chris@stacksjs.org>",
   "license": "MIT",

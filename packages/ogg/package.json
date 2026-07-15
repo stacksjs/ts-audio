@@ -2,7 +2,7 @@
   "name": "@ts-audio/ogg",
   "type": "module",
   "sideEffects": false,
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "OGG container codec package for ts-audio - zero dependency TypeScript implementation.",
   "author": "Chris Breuer <chris@stacksjs.org>",
   "license": "MIT",
