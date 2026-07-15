@@ -1,6 +1,7 @@
 {
   "name": "ts-audio",
   "type": "module",
+  "sideEffects": false,
   "version": "0.0.0",
   "description": "Zero-dependency TypeScript audio toolkit for modern media workflows.",
   "author": "Chris Breuer <chris@stacksjs.org>",

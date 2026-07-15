@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 /* eslint-disable no-console */
 import { CLI } from '@stacksjs/clapp'
 import { version } from '../../../package.json'
