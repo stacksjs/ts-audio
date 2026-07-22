@@ -40,6 +40,7 @@ export { Muxer, OutputFormat, AsyncMutex } from './muxer'
 export { Input, createInput, registerInputFormat, getInputFormats, detectFormat } from './input'
 export { Output, createOutput, registerOutputFormat, getOutputFormats, getOutputFormat, getOutputFormatByExtension } from './output'
 export { Conversion, convert } from './conversion'
+export * from './delivery'
 
 // Format registry
 export {

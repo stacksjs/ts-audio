@@ -5,6 +5,7 @@
 import type { ConversionOptions, ConversionProgress, AudioTrack, EncodedPacket } from './types'
 import { Input } from './input'
 import { Output } from './output'
+import { assertPacketCopyConversion } from './delivery'
 
 /**
  * Conversion init options
@@ -62,6 +63,7 @@ export class Conversion {
 
     this.inputTrack = track
     this.totalDuration = await this.input.getDuration()
+    assertPacketCopyConversion(track, this.options)
 
     // Apply time range options
     if (this.options.startTime !== undefined) {
