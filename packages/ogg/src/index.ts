@@ -43,6 +43,35 @@ interface OggPacket {
   timestamp: number
 }
 
+const OPUS_FRAME_SAMPLES = [
+  480, 960, 1920, 2880,
+  480, 960, 1920, 2880,
+  480, 960, 1920, 2880,
+  480, 960,
+  480, 960,
+  120, 240, 480, 960,
+  120, 240, 480, 960,
+  120, 240, 480, 960,
+  120, 240, 480, 960,
+]
+
+/** Return an Opus packet duration in its fixed 48 kHz clock. */
+export function opusPacketDurationSamples(packet: Uint8Array): number {
+  if (packet.byteLength === 0) throw new TypeError('Opus packet cannot be empty')
+  const code = packet[0] & 0b11
+  const frameCount = code === 0
+    ? 1
+    : code === 1 || code === 2
+      ? 2
+      : packet.byteLength > 1
+        ? packet[1] & 0b11_1111
+        : 0
+  if (frameCount === 0) throw new TypeError('Opus code 3 packet is missing a frame count')
+  const duration = OPUS_FRAME_SAMPLES[packet[0] >> 3] * frameCount
+  if (duration > 5760) throw new TypeError('Opus packet duration cannot exceed 120 ms')
+  return duration
+}
+
 function parseOggPage(data: Uint8Array, offset: number): OggPage | null {
   if (offset + 27 > data.length) return null
 
@@ -412,7 +441,7 @@ export class OggDemuxer extends Demuxer {
 }
 
 export class OggMuxer extends Muxer {
-  private packets: Uint8Array[] = []
+  private packets: EncodedPacket[] = []
   private serialNumber = Math.floor(Math.random() * 0xFFFFFFFF)
   private pageSequence = 0
   private codec: AudioCodec = 'opus'
@@ -440,7 +469,7 @@ export class OggMuxer extends Muxer {
   protected async writeHeader(): Promise<void> {}
 
   protected async writeAudioPacket(_track: unknown, packet: EncodedPacket): Promise<void> {
-    this.packets.push(packet.data)
+    this.packets.push(packet)
   }
 
   protected async writeTrailer(): Promise<void> {
@@ -453,9 +482,14 @@ export class OggMuxer extends Muxer {
     let granulePosition = 0n
     for (let i = 0; i < this.packets.length; i++) {
       const isLast = i === this.packets.length - 1
-      // Opus uses 960 samples per frame at 48kHz, Vorbis varies
-      granulePosition += BigInt(this.codec === 'opus' ? 960 : 1024)
-      await this.writePage(this.packets[i], granulePosition, isLast ? HEADER_TYPE_EOS : 0x00)
+      const packet = this.packets[i]
+      const duration = this.codec === 'opus'
+        ? opusPacketDurationSamples(packet.data)
+        : packet.duration
+          ? Math.round(packet.duration * this.sampleRate)
+          : 1024
+      granulePosition += BigInt(duration)
+      await this.writePage(packet.data, granulePosition, isLast ? HEADER_TYPE_EOS : 0x00)
     }
   }
 
