@@ -42,6 +42,7 @@ export { Output, createOutput, registerOutputFormat, getOutputFormats, getOutput
 export { Conversion, convert } from './conversion'
 export * from './delivery'
 export * from './delivery-workflow'
+export * from './native-transcode'
 
 // Format registry
 export {
