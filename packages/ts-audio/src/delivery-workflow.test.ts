@@ -2,7 +2,7 @@ import { describe, expect, it } from 'bun:test'
 import { buildAudioDeliveryPlan } from './delivery'
 import { createAudioDeliveryBundle, MemoryTranscriptCache, normalizeAudioChapters, transcribeWithCache } from './delivery-workflow'
 
-const plan = buildAudioDeliveryPlan({ codec: 'aac', container: 'm4a', duration: 8, sampleRate: 48_000, channels: 2 }, { formats: ['aac'] })
+const plan = buildAudioDeliveryPlan({ codec: 'aac', container: 'aac', duration: 8, sampleRate: 48_000, channels: 2 }, { formats: ['aac'] })
 
 describe('audio delivery workflow', () => {
   it('builds an encrypted audio HLS playlist', async () => {

@@ -25,9 +25,9 @@ export interface AudioDeliveryOptions {
 
 export interface PlannedAudioOutput {
   format: WebAudioFormat
-  container: 'ogg' | 'm4a' | 'mp3'
-  mimeType: 'audio/ogg; codecs=opus' | 'audio/mp4; codecs=mp4a.40.2' | 'audio/mpeg'
-  extension: 'ogg' | 'm4a' | 'mp3'
+  container: 'ogg' | 'aac' | 'mp3'
+  mimeType: 'audio/ogg; codecs=opus' | 'audio/aac' | 'audio/mpeg'
+  extension: 'ogg' | 'aac' | 'mp3'
   bitrate: number
   action: 'copy' | 'transcode'
   available: boolean
@@ -89,7 +89,7 @@ interface NativeAudioEncoderConstructor {
 
 const outputDetails: Record<WebAudioFormat, Pick<PlannedAudioOutput, 'container' | 'mimeType' | 'extension'>> = {
   opus: { container: 'ogg', mimeType: 'audio/ogg; codecs=opus', extension: 'ogg' },
-  aac: { container: 'm4a', mimeType: 'audio/mp4; codecs=mp4a.40.2', extension: 'm4a' },
+  aac: { container: 'aac', mimeType: 'audio/aac', extension: 'aac' },
   mp3: { container: 'mp3', mimeType: 'audio/mpeg', extension: 'mp3' },
 }
 
