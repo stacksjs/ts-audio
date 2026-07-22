@@ -3,7 +3,7 @@ import { build } from 'bun'
 import dts from 'bun-plugin-dtsx'
 
 await build({
-  entrypoints: ['./src/index.ts'],
+  entrypoints: ['./src/index.ts', './src/delivery-workflow.ts', './src/native-transcode.ts'],
   outdir: './dist',
   format: 'esm',
   target: 'node',
