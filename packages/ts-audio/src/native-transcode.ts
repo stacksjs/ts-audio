@@ -4,8 +4,8 @@ import type { Input } from './input'
 import type { Output } from './output'
 import { assertAudioPlanExecutable } from './delivery'
 import { Conversion } from './conversion'
-import { createInput } from './input'
-import { createOutput } from './output'
+import { createInput, getInputFormats, registerInputFormat } from './input'
+import { createOutput, getOutputFormats, registerOutputFormat } from './output'
 
 export type NativeAudioCodec = 'aac' | 'mp3' | 'opus'
 
@@ -101,6 +101,28 @@ function decoderCodec(codec: AudioCodec): string {
 
 function encoderCodec(codec: NativeAudioCodec): string {
   return codec === 'aac' ? 'mp4a.40.2' : codec
+}
+
+async function ensureDefaultFormats(inputs: boolean, outputs: boolean): Promise<void> {
+  const [mp3, aac, ogg, flac, wav] = await Promise.all([
+    import('@ts-audio/mp3'),
+    import('@ts-audio/aac'),
+    import('@ts-audio/ogg'),
+    import('@ts-audio/flac'),
+    import('@ts-audio/wav'),
+  ])
+  if (inputs) {
+    const names = new Set(getInputFormats().map(format => format.name))
+    for (const format of [new mp3.Mp3InputFormat(), new aac.AacInputFormat(), new ogg.OggInputFormat(), new flac.FlacInputFormat(), new wav.WavInputFormat()]) {
+      if (!names.has(format.name)) registerInputFormat(format)
+    }
+  }
+  if (outputs) {
+    const names = new Set(getOutputFormats().map(format => format.name))
+    for (const format of [new mp3.Mp3OutputFormat(), new aac.AacOutputFormat(), new ogg.OggOutputFormat()]) {
+      if (!names.has(format.name)) registerOutputFormat(format)
+    }
+  }
 }
 
 function descriptionBytes(value?: ArrayBuffer | ArrayBufferView): Uint8Array | undefined {
@@ -238,6 +260,9 @@ export async function generateAudioDerivatives(
   options: AudioDerivativeOptions = {},
 ): Promise<AudioDerivative[]> {
   assertAudioPlanExecutable(plan)
+  if (!options.inputFactory || !options.outputFactory) {
+    await ensureDefaultFormats(!options.inputFactory, !options.outputFactory)
+  }
   if (!options.inputFactory && typeof source === 'object' && 'type' in source && source.type === 'stream' && plan.outputs.length > 1) {
     throw new TypeError('Multiple audio derivatives from a stream require an inputFactory')
   }
