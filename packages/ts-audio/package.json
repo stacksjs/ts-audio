@@ -32,6 +32,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./delivery-workflow": {
+      "types": "./dist/delivery-workflow.d.ts",
+      "import": "./dist/delivery-workflow.js"
     }
   },
   "module": "./dist/index.js",

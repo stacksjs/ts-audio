@@ -41,6 +41,7 @@ export { Input, createInput, registerInputFormat, getInputFormats, detectFormat 
 export { Output, createOutput, registerOutputFormat, getOutputFormats, getOutputFormat, getOutputFormatByExtension } from './output'
 export { Conversion, convert } from './conversion'
 export * from './delivery'
+export * from './delivery-workflow'
 
 // Format registry
 export {
