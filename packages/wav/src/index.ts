@@ -242,7 +242,7 @@ export class WavDemuxer extends Demuxer {
   }
 
   private async parseFmtChunk(size: number): Promise<void> {
-    const formatCode = await this.reader.readU16LE()
+    let formatCode = await this.reader.readU16LE()
     const channels = await this.reader.readU16LE()
     const sampleRate = await this.reader.readU32LE()
     const byteRate = await this.reader.readU32LE()
@@ -265,8 +265,28 @@ export class WavDemuxer extends Demuxer {
         this.format.validBitsPerSample = await this.reader.readU16LE() ?? undefined
         this.format.channelMask = await this.reader.readU32LE() ?? undefined
         this.format.subFormat = await this.reader.readBytes(16) ?? undefined
+        if (this.format.subFormat?.byteLength === 16) {
+          formatCode = new DataView(
+            this.format.subFormat.buffer,
+            this.format.subFormat.byteOffset,
+            this.format.subFormat.byteLength,
+          ).getUint16(0, true)
+          this.format.formatCode = formatCode
+        }
       }
     }
+
+    const supported = new Set([WAVE_FORMAT_PCM, WAVE_FORMAT_IEEE_FLOAT, WAVE_FORMAT_ALAW, WAVE_FORMAT_MULAW])
+    if (formatCode === null || !supported.has(formatCode)) {
+      const tag = formatCode === null ? 'truncated' : `0x${formatCode.toString(16).padStart(4, '0')}`
+      throw new TypeError(`Unsupported WAVE format tag: ${tag}`)
+    }
+    const validDepth = formatCode === WAVE_FORMAT_IEEE_FLOAT
+      ? bitsPerSample === 32 || bitsPerSample === 64
+      : formatCode === WAVE_FORMAT_PCM
+        ? bitsPerSample === 8 || bitsPerSample === 16 || bitsPerSample === 24 || bitsPerSample === 32
+        : bitsPerSample === 8
+    if (!validDepth) throw new TypeError(`Unsupported ${bitsPerSample}-bit WAVE sample format`)
   }
 
   private async parseDs64Chunk(size: number): Promise<void> {
