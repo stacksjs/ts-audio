@@ -3,8 +3,8 @@
  * Implements MPEG Audio Layer III demuxing/muxing with ID3 tag support
  */
 
-import type { Source, Target, AudioTrack, EncodedPacket, AudioMetadata, ID3v1Tag, ID3v2Tag, ID3v2Frame } from 'ts-audio'
-import { InputFormat, OutputFormat, Demuxer, Muxer, Reader, crc16Mp3 } from 'ts-audio'
+import type { Source, Target, AudioTrack, EncodedPacket, AudioMetadata, ID3v1Tag, ID3v2Tag, ID3v2Frame } from '@ts-audio/core'
+import { InputFormat, OutputFormat, Demuxer, Muxer, Reader, crc16Mp3 } from '@ts-audio/core'
 
 // MPEG Audio version
 const MPEG_VERSIONS = ['MPEG2.5', null, 'MPEG2', 'MPEG1'] as const

@@ -3,8 +3,8 @@
  * Implements FLAC format demuxing/muxing with metadata support
  */
 
-import type { Source, Target, AudioTrack, EncodedPacket, AudioMetadata, FlacStreamInfo, FlacPicture, VorbisComment } from 'ts-audio'
-import { InputFormat, OutputFormat, Demuxer, Muxer, Reader, crc8Flac, crc16Flac } from 'ts-audio'
+import type { Source, Target, AudioTrack, EncodedPacket, AudioMetadata, FlacStreamInfo, FlacPicture, VorbisComment } from '@ts-audio/core'
+import { InputFormat, OutputFormat, Demuxer, Muxer, Reader, crc8Flac, crc16Flac } from '@ts-audio/core'
 
 // FLAC magic number
 const FLAC_MAGIC = 0x664C6143 // "fLaC"

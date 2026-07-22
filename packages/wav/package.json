@@ -41,10 +41,10 @@
     "typecheck": "bunx tsc --noEmit"
   },
   "peerDependencies": {
-    "ts-audio": "workspace:*"
+    "@ts-audio/core": "workspace:*"
   },
   "devDependencies": {
-    "ts-audio": "workspace:*",
+    "@ts-audio/core": "workspace:*",
     "bun-plugin-dtsx": "^0.9.9"
   }
 }

@@ -3,8 +3,8 @@
  * Implements ADTS (Audio Data Transport Stream) format demuxing/muxing
  */
 
-import type { Source, Target, AudioTrack, EncodedPacket } from 'ts-audio'
-import { InputFormat, OutputFormat, Demuxer, Muxer, Reader } from 'ts-audio'
+import type { Source, Target, AudioTrack, EncodedPacket } from '@ts-audio/core'
+import { InputFormat, OutputFormat, Demuxer, Muxer, Reader } from '@ts-audio/core'
 
 // AAC sample rates
 const AAC_SAMPLE_RATES: (number | null)[] = [

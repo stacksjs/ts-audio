@@ -3,8 +3,8 @@
  * Implements RIFF/WAVE format demuxing/muxing
  */
 
-import type { Source, Target, AudioTrack, EncodedPacket, AudioMetadata, SampleFormat } from 'ts-audio'
-import { InputFormat, OutputFormat, Demuxer, Muxer, Reader } from 'ts-audio'
+import type { Source, Target, AudioTrack, EncodedPacket, AudioMetadata, SampleFormat } from '@ts-audio/core'
+import { InputFormat, OutputFormat, Demuxer, Muxer, Reader } from '@ts-audio/core'
 
 // RIFF chunk IDs
 const RIFF_MAGIC = 0x52494646 // "RIFF"

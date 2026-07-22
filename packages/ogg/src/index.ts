@@ -3,8 +3,8 @@
  * Supports Vorbis, Opus, and FLAC codecs within OGG container
  */
 
-import type { Source, Target, AudioTrack, EncodedPacket, AudioMetadata, AudioCodec, VorbisComment } from 'ts-audio'
-import { InputFormat, OutputFormat, Demuxer, Muxer, Reader, crc32 } from 'ts-audio'
+import type { Source, Target, AudioTrack, EncodedPacket, AudioMetadata, AudioCodec, VorbisComment } from '@ts-audio/core'
+import { InputFormat, OutputFormat, Demuxer, Muxer, Reader, crc32 } from '@ts-audio/core'
 
 // OGG page header magic
 const OGG_MAGIC = 0x4F676753 // "OggS"

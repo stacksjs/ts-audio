@@ -10,51 +10,51 @@
     },
     "packages/aac": {
       "name": "@ts-audio/aac",
-      "version": "0.0.0",
+      "version": "0.0.1",
       "devDependencies": {
+        "@ts-audio/core": "workspace:*",
         "bun-plugin-dtsx": "^0.9.9",
-        "ts-audio": "workspace:*",
       },
       "peerDependencies": {
-        "ts-audio": "workspace:*",
+        "@ts-audio/core": "workspace:*",
       },
     },
     "packages/flac": {
       "name": "@ts-audio/flac",
-      "version": "0.0.0",
+      "version": "0.0.1",
       "devDependencies": {
+        "@ts-audio/core": "workspace:*",
         "bun-plugin-dtsx": "^0.9.9",
-        "ts-audio": "workspace:*",
       },
       "peerDependencies": {
-        "ts-audio": "workspace:*",
+        "@ts-audio/core": "workspace:*",
       },
     },
     "packages/mp3": {
       "name": "@ts-audio/mp3",
-      "version": "0.0.0",
+      "version": "0.0.1",
       "devDependencies": {
+        "@ts-audio/core": "workspace:*",
         "bun-plugin-dtsx": "^0.9.9",
-        "ts-audio": "workspace:*",
       },
       "peerDependencies": {
-        "ts-audio": "workspace:*",
+        "@ts-audio/core": "workspace:*",
       },
     },
     "packages/ogg": {
       "name": "@ts-audio/ogg",
-      "version": "0.0.0",
+      "version": "0.0.1",
       "devDependencies": {
+        "@ts-audio/core": "workspace:*",
         "bun-plugin-dtsx": "^0.9.9",
-        "ts-audio": "workspace:*",
       },
       "peerDependencies": {
-        "ts-audio": "workspace:*",
+        "@ts-audio/core": "workspace:*",
       },
     },
     "packages/ts-audio": {
-      "name": "ts-audio",
-      "version": "0.0.0",
+      "name": "@ts-audio/core",
+      "version": "0.0.1",
       "bin": {
         "ts-audio": "./dist/bin/cli.js",
       },
@@ -73,13 +73,13 @@
     },
     "packages/wav": {
       "name": "@ts-audio/wav",
-      "version": "0.0.0",
+      "version": "0.0.1",
       "devDependencies": {
+        "@ts-audio/core": "workspace:*",
         "bun-plugin-dtsx": "^0.9.9",
-        "ts-audio": "workspace:*",
       },
       "peerDependencies": {
-        "ts-audio": "workspace:*",
+        "@ts-audio/core": "workspace:*",
       },
     },
   },
@@ -135,6 +135,8 @@
     "@stacksjs/ts-xml": ["@stacksjs/ts-xml@0.1.0", "", { "bin": { "bin-name": "./dist/bin/cli.js" } }, "sha512-YB7FSlFcPqopUOmjK1Qqr5E6QaarerIFJzWfUXOO/EuR1qX+IRRKxOKbWRmCvN72Mnchz8EfXhlvxEK+Zz/mQQ=="],
 
     "@ts-audio/aac": ["@ts-audio/aac@workspace:packages/aac"],
+
+    "@ts-audio/core": ["@ts-audio/core@workspace:packages/ts-audio"],
 
     "@ts-audio/flac": ["@ts-audio/flac@workspace:packages/flac"],
 
@@ -309,8 +311,6 @@
     "teex": ["teex@1.0.1", "", { "dependencies": { "streamx": "^2.12.5" } }, "sha512-eYE6iEI62Ni1H8oIa7KlDU6uQBtqr4Eajni3wX7rpfXD8ysFx8z0+dri+KWEPWpBsxXfxu58x/0jvTVT1ekOSg=="],
 
     "text-decoder": ["text-decoder@1.2.7", "", { "dependencies": { "b4a": "^1.6.4" } }, "sha512-vlLytXkeP4xvEq2otHeJfSQIRyWxo/oZGEbXrtEEF9Hnmrdly59sUbzZ/QgyWuLYHctCHxFF4tRQZNQ9k60ExQ=="],
-
-    "ts-audio": ["ts-audio@workspace:packages/ts-audio"],
 
     "ts-broadcasting": ["ts-broadcasting@0.0.4", "", { "bin": { "broadcast": "./dist/bin/cli.js" } }, "sha512-dnPtNM6mTCCnJcf8S9ffnWMOLCr5LRpxz87haYw7AtqyqCkM5B3kT6tXr1jJnxjDlWPfSfhpY+n6Y6N2l9CGPQ=="],
 

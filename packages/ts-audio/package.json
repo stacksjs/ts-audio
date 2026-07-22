@@ -1,5 +1,5 @@
 {
-  "name": "ts-audio",
+  "name": "@ts-audio/core",
   "type": "module",
   "sideEffects": false,
   "version": "0.0.1",

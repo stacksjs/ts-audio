@@ -8,7 +8,7 @@ await build({
   format: 'esm',
   target: 'node',
   minify: true,
-  external: ['ts-audio'],
+  external: ['@ts-audio/core'],
   plugins: [dts()],
 })
 

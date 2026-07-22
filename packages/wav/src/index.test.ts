@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { Input } from 'ts-audio'
+import { Input } from '@ts-audio/core'
 import { WavInputFormat } from './index'
 
 function wave(formatTag: number, bitsPerSample = 16): Uint8Array {

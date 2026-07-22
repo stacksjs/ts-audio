@@ -5,7 +5,7 @@ import { version } from '../../../package.json'
 import type { OutputFormat } from '../src'
 import { Input, Output, Conversion, createSource, BufferTarget, formatDuration, formatFileSize, formatBitrate, formatSampleRate, getChannelLayoutName } from '../src'
 
-const cli = new CLI('ts-audio')
+const cli = new CLI('@ts-audio/core')
 
 cli
   .command('info <input>', 'Display information about an audio file')
