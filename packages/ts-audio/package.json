@@ -2,7 +2,7 @@
   "name": "@ts-audio/core",
   "type": "module",
   "sideEffects": false,
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Zero-dependency TypeScript audio toolkit for modern media workflows.",
   "author": "Chris Breuer <chris@stacksjs.org>",
   "license": "MIT",
