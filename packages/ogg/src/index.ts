@@ -35,12 +35,25 @@ interface OggStream {
   packets: OggPacket[]
   codecPrivate?: Uint8Array
   vorbisComment?: VorbisComment
+  pendingPacketParts: Uint8Array[]
+  nextTimestamp: number
 }
 
 interface OggPacket {
   data: Uint8Array
   granulePosition: bigint
   timestamp: number
+  duration: number
+}
+
+function concatenate(parts: Uint8Array[]): Uint8Array {
+  const output = new Uint8Array(parts.reduce((size, part) => size + part.byteLength, 0))
+  let offset = 0
+  for (const part of parts) {
+    output.set(part, offset)
+    offset += part.byteLength
+  }
+  return output
 }
 
 const OPUS_FRAME_SAMPLES = [
@@ -337,40 +350,39 @@ export class OggDemuxer extends Demuxer {
             channels: codecInfo.channels,
             packets: [],
             codecPrivate: page.data,
+            pendingPacketParts: [],
+            nextTimestamp: 0,
           }
           this.streams.set(page.serialNumber, stream)
         }
         continue
       }
 
-      // Try to parse Vorbis comment
-      if (!stream.vorbisComment) {
-        const vc = parseVorbisComment(page.data)
-        if (vc) {
-          stream.vorbisComment = vc
-          continue
-        }
-      }
+      let offset = 0
+      for (const segmentSize of page.segmentTable) {
+        stream.pendingPacketParts.push(page.data.subarray(offset, offset + segmentSize))
+        offset += segmentSize
+        if (segmentSize === 255) continue
 
-      // Audio data page - extract packets
-      if ((page.headerType & HEADER_TYPE_CONTINUATION) === 0) {
-        let offset = 0
-        for (const segmentSize of page.segmentTable) {
-          if (segmentSize > 0) {
-            const packetData = page.data.subarray(offset, offset + segmentSize)
-
-            const timestamp = stream.packets.length > 0
-              ? Number(page.granulePosition) / stream.sampleRate
-              : 0
-
-            stream.packets.push({
-              data: packetData,
-              granulePosition: page.granulePosition,
-              timestamp,
-            })
+        const packetData = concatenate(stream.pendingPacketParts)
+        stream.pendingPacketParts = []
+        if (!stream.vorbisComment) {
+          const comment = parseVorbisComment(packetData)
+          if (comment) {
+            stream.vorbisComment = comment
+            continue
           }
-          offset += segmentSize
         }
+        const duration = stream.codec === 'opus'
+          ? opusPacketDurationSamples(packetData) / 48000
+          : 1024 / stream.sampleRate
+        stream.packets.push({
+          data: packetData,
+          granulePosition: page.granulePosition,
+          timestamp: stream.nextTimestamp,
+          duration,
+        })
+        stream.nextTimestamp += duration
       }
     }
 
@@ -403,7 +415,7 @@ export class OggDemuxer extends Demuxer {
 
     // Calculate duration from last packet
     const lastPacket = this.primaryStream.packets[this.primaryStream.packets.length - 1]
-    this._duration = lastPacket ? lastPacket.timestamp : 0
+    this._duration = lastPacket ? lastPacket.timestamp + lastPacket.duration : 0
 
     // Convert Vorbis comments to metadata
     this._metadata = this.primaryStream.vorbisComment
@@ -422,6 +434,7 @@ export class OggDemuxer extends Demuxer {
     return {
       data: packet.data,
       timestamp: packet.timestamp,
+      duration: packet.duration,
       isKeyframe: true,
       trackId: 1,
     }
