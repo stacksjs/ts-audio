@@ -53,8 +53,8 @@
     "release:minor": "bunx --bun bumpx minor --recursive --commit --tag --tag-name v-audio-{version} --push --yes"
   },
   "devDependencies": {
-    "@stacksjs/bunpress": "^0.2.11",
-    "better-dx": "^0.2.15"
+    "@stacksjs/bunpress": "^0.2.14",
+    "better-dx": "^0.2.25"
   },
   "git-hooks": {
     "pre-commit": {
