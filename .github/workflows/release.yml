@@ -16,7 +16,7 @@ jobs:
           fetch-depth: 0
 
       - name: Install Bun
-        uses: oven-sh/setup-bun@v2.0.2
+        uses: oven-sh/setup-bun@v2.2.0
 
       - name: Setup Pantry
         uses: home-lang/pantry/packages/action@main
@@ -38,7 +38,7 @@ jobs:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
 
       - name: Attach Binaries
-        uses: stacksjs/action-releaser@v1.2.9
+        uses: stacksjs/action-releaser@v1.2.11
         with:
           files: |
             bin/audiox-linux-x64.zip
