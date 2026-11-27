@@ -36,6 +36,26 @@ const md5 = createHash('md5').update(flacMd5Bytes(decoded.channels, decoded.bits
 // md5 === Buffer.from(decoded.streamInfo.md5).toString('hex')
 ```
 
+## Encoding
+
+```ts
+import { encodeFlac } from '@ts-audio/flac'
+
+const flac = encodeFlac(channels, { sampleRate: 44100, bitsPerSample: 16 })
+```
+
+Lossless, so `decodeFlacFile` gives back exactly the samples you passed, and the
+MD5 it writes into STREAMINFO matches them. Every file passes libFLAC's
+`flac --test`. It makes libFLAC's default-level choices per block — constant,
+best fixed predictor, linear predictor or plain samples, and the cheapest
+stereo assignment — and on speech comes out about 1.5% smaller than `flac -5`.
+
+Floats in -1 to 1 are scaled to `bitsPerSample`; integers must already fit it.
+Low bits that every sample shares are dropped and coded for free, so 16-bit
+audio in a 24-bit stream costs no more than 16-bit.
+
+## Packets
+
 `createFlacDecoder(track)` is the packet decoder for a FLAC track of another
 container. It reads STREAMINFO from a track's `codecDescription` in any of the
 shapes one arrives in: `"fLaC"` then the metadata blocks (WebCodecs' shape and

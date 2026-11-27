@@ -110,8 +110,13 @@ Being clear about the edges, since they are easy to hit:
 
 - **Decoding is the strong suit.** MP3, AAC, Opus, FLAC, Vorbis and PCM all
   decode to samples, verified against reference decoders.
-- **There are no encoders here** beyond PCM/WAV. The muxers package up packets;
-  they do not compress. `Conversion` refuses anything needing an encoder — a
+- **Encoding: PCM and FLAC.** `encodeWav` writes PCM, and `encodeFlac` compresses
+  losslessly — within a couple of percent of libFLAC's default level, and every
+  file it writes passes `flac --test`. There are no lossy encoders, so MP3, AAC,
+  Opus and Vorbis cannot be written from samples.
+- **`convert` still only copies packets.** It does not yet call `encodeFlac`, so
+  `convert in.wav out.flac` is refused; decode, then `encodeFlac`. It refuses
+  anything needing an encoder — a
   codec change, resampling, a channel or bitrate change, normalisation, fades —
   with an error naming what it cannot do, rather than writing a file that is
   wrong. Where the runtime provides WebCodecs, `transcodeAudioWithWebCodecs`

@@ -125,8 +125,14 @@ export interface DecodedFlac {
 export function decodeFlacFile(bytes: Uint8Array, options: DecodeFlacOptions = {}): DecodedFlac {
   const { streamInfo, audioStart } = readFlacMetadata(bytes)
   const frames = readFlacFrames(bytes, audioStart)
-  if (!frames.length)
-    throw new FlacDecodeError('FLAC file holds no frames')
+  if (!frames.length) {
+    // A stream with no frames is valid, and libFLAC decodes it to nothing. One
+    // whose STREAMINFO promises samples has lost its frames, which is damage.
+    if (streamInfo.totalSamples > 0n)
+      throw new FlacDecodeError('FLAC file holds no frames')
+    const channels = Array.from({ length: streamInfo.channels }, () => new Int32Array(0))
+    return { sampleRate: streamInfo.sampleRate, bitsPerSample: streamInfo.bitsPerSample, channels, streamInfo }
+  }
   const decoder = new FlacDecoder(streamInfo)
   const blocks: Int32Array[][] = []
   let total = 0

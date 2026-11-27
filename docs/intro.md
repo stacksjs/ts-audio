@@ -27,9 +27,11 @@ PCM needs no decoder, so WAV and RF64 come for free.
 
 Worth knowing before you start:
 
-- **It does not encode**, beyond writing PCM into WAV. The muxers package up
-  packets; they do not compress. `Conversion` refuses anything that would need
-  an encoder, with an error saying so, rather than writing a file that is wrong.
+- **It encodes PCM and FLAC, and nothing lossy.** `encodeWav` writes PCM and
+  `encodeFlac` compresses losslessly; there are no MP3, AAC, Opus or Vorbis
+  encoders. `Conversion` itself only copies packets, so it refuses anything that
+  would need an encoder, with an error saying so, rather than writing a file
+  that is wrong.
   Where the runtime provides WebCodecs, `transcodeAudioWithWebCodecs` uses the
   platform's own encoder.
 - **It does not read video containers.** MP4, MOV, WebM, Matroska and MPEG-TS

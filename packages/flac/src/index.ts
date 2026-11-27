@@ -6,7 +6,7 @@
 import type { Source, Target, AudioTrack, EncodedPacket, AudioMetadata, FlacStreamInfo, FlacPicture, VorbisComment, AudioCodec } from '@ts-audio/core'
 import { InputFormat, OutputFormat, Demuxer, Muxer, Reader } from '@ts-audio/core'
 import { parseFlacFrameHeader, parseFlacStreamInfo } from './flac-decoder'
-import { readFlacFrames } from './flac-audio'
+import { readFlacFrames, streamInfoFromDescription } from './flac-audio'
 
 // FLAC magic number
 const FLAC_MAGIC = 0x664C6143 // "fLaC"
@@ -360,6 +360,8 @@ export class FlacMuxer extends Muxer {
   private sampleRate = 44100
   private channels = 2
   private bitsPerSample = 16
+  /** The source's STREAMINFO, when the track carried one, for its MD5. */
+  private sourceInfo: FlacStreamInfo | null = null
 
   get formatName(): string {
     return 'flac'
@@ -369,11 +371,18 @@ export class FlacMuxer extends Muxer {
     return 'audio/flac'
   }
 
-  protected onTrackAdded(track: { type: string, config: { sampleRate: number, channels: number, bitDepth?: number } }): void {
+  protected onTrackAdded(track: { type: string, config: { sampleRate: number, channels: number, bitDepth?: number, codecDescription?: Uint8Array } }): void {
     if (track.type === 'audio') {
       this.sampleRate = track.config.sampleRate
       this.channels = track.config.channels
       this.bitsPerSample = track.config.bitDepth ?? 16
+      const description = track.config.codecDescription
+      try {
+        this.sourceInfo = description?.length ? streamInfoFromDescription(description) : null
+      }
+      catch {
+        this.sourceInfo = null
+      }
     }
   }
 
@@ -387,47 +396,70 @@ export class FlacMuxer extends Muxer {
   }
 
   protected async writeTrailer(): Promise<void> {
-    // Calculate total samples
-    let totalSamples = 0n
-    for (const packet of this.packets) {
-      // Estimate based on typical FLAC block size
-      totalSamples += 4096n
-    }
+    // Every frame states its own block size, so the totals are counted rather
+    // than guessed. Assuming 4096 per frame made the length wrong whenever the
+    // last frame was short -- which is nearly always -- and libFLAC refused the
+    // result: "decoded number of samples is smaller than the total number of
+    // samples set in the STREAMINFO".
+    let totalSamples = 0
+    let minBlock = Number.POSITIVE_INFINITY
+    let maxBlock = 0
+    let minFrame = Number.POSITIVE_INFINITY
+    let maxFrame = 0
+    this.packets.forEach((packet, index) => {
+      const header = parseFlacFrameHeader(packet, 0)
+      if (!header)
+        throw new Error(`FLAC packet ${index} is not a FLAC frame`)
+      totalSamples += header.blockSize
+      // STREAMINFO's minimum leaves out the last block, which may be short.
+      if (index < this.packets.length - 1)
+        minBlock = Math.min(minBlock, header.blockSize)
+      maxBlock = Math.max(maxBlock, header.blockSize)
+      minFrame = Math.min(minFrame, packet.length)
+      maxFrame = Math.max(maxFrame, packet.length)
+    })
+    if (!Number.isFinite(minBlock))
+      minBlock = maxBlock
+    if (!Number.isFinite(minFrame))
+      minFrame = 0
 
-    // Write STREAMINFO block (last metadata block)
     const streamInfo = new Uint8Array(34)
     const view = new DataView(streamInfo.buffer)
-
-    // Block sizes (min/max) - typical values
-    view.setUint16(0, 4096, false) // min block size
-    view.setUint16(2, 4096, false) // max block size
-
-    // Frame sizes (0 = unknown)
-    streamInfo[4] = 0
-    streamInfo[5] = 0
-    streamInfo[6] = 0
-    streamInfo[7] = 0
-    streamInfo[8] = 0
-    streamInfo[9] = 0
+    view.setUint16(0, Math.max(16, minBlock), false)
+    view.setUint16(2, Math.max(16, maxBlock), false)
+    const writeU24 = (at: number, value: number): void => {
+      streamInfo[at] = (value >> 16) & 0xFF
+      streamInfo[at + 1] = (value >> 8) & 0xFF
+      streamInfo[at + 2] = value & 0xFF
+    }
+    writeU24(4, minFrame)
+    writeU24(7, maxFrame)
 
     // Sample rate (20 bits), channels (3 bits), bits per sample (5 bits), total samples (36 bits)
     streamInfo[10] = (this.sampleRate >> 12) & 0xFF
     streamInfo[11] = (this.sampleRate >> 4) & 0xFF
     streamInfo[12] = ((this.sampleRate & 0x0F) << 4) | ((this.channels - 1) << 1) | ((this.bitsPerSample - 1) >> 4)
-    streamInfo[13] = (((this.bitsPerSample - 1) & 0x0F) << 4) | Number((totalSamples >> 32n) & 0x0Fn)
-    view.setUint32(14, Number(totalSamples & 0xFFFFFFFFn), false)
+    streamInfo[13] = (((this.bitsPerSample - 1) & 0x0F) << 4) | (Math.floor(totalSamples / 2 ** 32) & 0x0F)
+    view.setUint32(14, totalSamples >>> 0, false)
 
-    // MD5 signature (zeros = unknown)
-    for (let i = 18; i < 34; i++) {
-      streamInfo[i] = 0
+    // These packets are copied, not decoded, so the MD5 cannot be worked out
+    // here. The source's still holds when every one of its frames came through
+    // -- the audio is then the same samples -- and a conversion trims whole
+    // frames, so a matching total means nothing was dropped. Otherwise it stays
+    // zero, which the format reads as "not computed".
+    const source = this.sourceInfo
+    if (source
+      && Number(source.totalSamples) === totalSamples
+      && source.sampleRate === this.sampleRate
+      && source.channels === this.channels
+      && source.bitsPerSample === this.bitsPerSample) {
+      streamInfo.set(source.md5, 18)
     }
 
-    // Write metadata block header (last block)
     await this.writer.writeU8(0x80 | BLOCK_STREAMINFO)
     await this.writer.writeU24BE(34)
     await this.writer.writeBytes(streamInfo)
 
-    // Write all audio frames
     for (const packet of this.packets) {
       await this.writer.writeBytes(packet)
     }
@@ -475,3 +507,7 @@ export { FlacDecodeError, FlacDecoder, flacMd5Bytes, flacSamplesToFloat, parseFl
 export type { FlacDecodedFrame, FlacFrameHeader, FlacStreamShape } from './flac-decoder'
 export { createFlacDecoder, decodeFlacFile, isFlac, readFlacFrames, readFlacMetadata, streamInfoFromDescription } from './flac-audio'
 export type { DecodedFlac, DecodeFlacOptions } from './flac-audio'
+
+// Encoding samples to FLAC
+export { encodeFlac, FlacEncodeError } from './flac-encoder'
+export type { EncodeFlacOptions } from './flac-encoder'
