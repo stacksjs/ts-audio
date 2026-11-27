@@ -4,7 +4,7 @@
  */
 
 import type { Source, Target, AudioTrack, EncodedPacket, AudioMetadata, AudioCodec, VorbisComment } from '@ts-audio/core'
-import { InputFormat, OutputFormat, Demuxer, Muxer, Reader, crc32 } from '@ts-audio/core'
+import { InputFormat, OutputFormat, Demuxer, Muxer, Reader } from '@ts-audio/core'
 
 // OGG page header magic
 const OGG_MAGIC = 0x4F676753 // "OggS"
