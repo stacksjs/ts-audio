@@ -4,7 +4,7 @@
  */
 
 import type { Source, Target, AudioTrack, EncodedPacket, AudioMetadata, ID3v1Tag, ID3v2Tag, ID3v2Frame } from '@ts-audio/core'
-import { InputFormat, OutputFormat, Demuxer, Muxer, Reader, crc16Mp3 } from '@ts-audio/core'
+import { InputFormat, OutputFormat, Demuxer, Muxer, Reader } from '@ts-audio/core'
 
 // MPEG Audio version
 const MPEG_VERSIONS = ['MPEG2.5', null, 'MPEG2', 'MPEG1'] as const
@@ -578,3 +578,10 @@ export const MP3_OUTPUT: Mp3OutputFormat = new Mp3OutputFormat()
 
 // Re-export types
 export type { Mp3FrameHeader, Mp3Frame, ID3v1Tag, ID3v2Tag, ID3v2Frame }
+
+// Decoding MP3 to samples
+export { Mp3DecodeError, Mp3Decoder, mp3SideInfoLength, parseMp3Header } from './mp3-decoder'
+/** The decoder's view of a frame header: numeric version and layer, `frameLength` and `samples`, as `parseMp3Header` reads them. The demuxer's `Mp3FrameHeader` above describes the same bytes for a reader rather than a decoder. */
+export type { Mp3FrameHeader as Mp3DecoderFrameHeader } from './mp3-decoder'
+export { createMp3Decoder, decodeMp3File, isMp3, readMp3Frames } from './mp3-audio'
+export type { DecodeMp3Options, StreamInfo } from './mp3-audio'
