@@ -25,7 +25,8 @@
       "@ts-audio/mp3": ["./packages/mp3/src/index.ts"],
       "@ts-audio/aac": ["./packages/aac/src/index.ts"],
       "@ts-audio/flac": ["./packages/flac/src/index.ts"],
-      "@ts-audio/ogg": ["./packages/ogg/src/index.ts"]
+      "@ts-audio/ogg": ["./packages/ogg/src/index.ts"],
+      "@ts-audio/opus": ["./packages/opus/src/index.ts"]
     }
   },
   "exclude": [
