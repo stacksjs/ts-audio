@@ -3,7 +3,7 @@
  * Implements FLAC format demuxing/muxing with metadata support
  */
 
-import type { Source, Target, AudioTrack, EncodedPacket, AudioMetadata, FlacStreamInfo, FlacPicture, VorbisComment } from '@ts-audio/core'
+import type { Source, Target, AudioTrack, EncodedPacket, AudioMetadata, FlacStreamInfo, FlacPicture, VorbisComment, AudioCodec } from '@ts-audio/core'
 import { InputFormat, OutputFormat, Demuxer, Muxer, Reader } from '@ts-audio/core'
 import { parseFlacFrameHeader, parseFlacStreamInfo } from './flac-decoder'
 import { readFlacFrames } from './flac-audio'
@@ -453,6 +453,7 @@ export class FlacInputFormat extends InputFormat {
 }
 
 export class FlacOutputFormat extends OutputFormat {
+  get supportedCodecs(): AudioCodec[] { return ['flac'] }
   get name(): string { return 'flac' }
   get mimeType(): string { return 'audio/flac' }
   get extension(): string { return 'flac' }

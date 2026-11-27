@@ -2,7 +2,7 @@
  * Base muxer class for audio formats
  */
 
-import type { Target, AudioTrackConfig, OutputAudioTrack, EncodedPacket, AudioMetadata } from './types'
+import type { Target, AudioTrackConfig, OutputAudioTrack, EncodedPacket, AudioMetadata, AudioCodec } from './types'
 import { Writer, createWriter } from './writer'
 
 /**
@@ -184,4 +184,43 @@ export abstract class OutputFormat {
    * Create a muxer for this format
    */
   abstract createMuxer(target: Target): Muxer
+
+  /**
+   * The codecs this container can carry.
+   *
+   * An empty list means the format has not said, and nothing is checked --
+   * which is what a format written before this existed reports, so adding this
+   * breaks no one. The formats that ship with ts-audio all declare theirs.
+   */
+  get supportedCodecs(): AudioCodec[] {
+    return []
+  }
+}
+
+/**
+ * Whether a container that carries `supported` can carry `codec`.
+ *
+ * Exact names match, and a format that says `pcm` takes any of PCM's layouts:
+ * a demuxer reports a WAV track as `pcm` while `decodeWav` names the layout,
+ * `pcm_s16le` and the rest, and both have to be writable to a WAV.
+ */
+export function codecMatches(supported: AudioCodec, codec: AudioCodec): boolean {
+  return supported === codec || (supported === 'pcm' && codec.startsWith('pcm'))
+}
+
+/**
+ * Refuses a codec the container cannot carry, before anything is written.
+ *
+ * Without this, writing PCM packets into an MP3 container succeeded and
+ * produced a file no player would open: `Conversion` only compared the codec
+ * asked for against the track's, so changing the container alone passed every
+ * check it had.
+ */
+export function assertCodecSupported(format: OutputFormat, codec: AudioCodec): void {
+  const supported = format.supportedCodecs
+  if (supported.length === 0)
+    return
+  if (supported.some(candidate => codecMatches(candidate, codec)))
+    return
+  throw new Error(`The ${format.name} container cannot carry ${codec} audio; it carries ${supported.join(', ')}`)
 }

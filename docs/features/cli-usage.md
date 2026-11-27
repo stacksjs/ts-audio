@@ -86,5 +86,6 @@ The error names what it cannot do:
 Error: Packet-copy conversion cannot perform codec pcm to mp3; a native decoder and encoder are required
 ```
 
-See [Conversion](./audio-conversion.md) for why, and for the one case that is
-not yet caught.
+A container that cannot carry the source codec is refused the same way, so
+`convert in.wav out.mp3` fails rather than writing an MP3 full of PCM. See
+[Conversion](./audio-conversion.md).

@@ -116,11 +116,9 @@ Being clear about the edges, since they are easy to hit:
   with an error naming what it cannot do, rather than writing a file that is
   wrong. Where the runtime provides WebCodecs, `transcodeAudioWithWebCodecs`
   uses the platform's own encoder; browsers have it and Bun does not.
-- **One gap in that guard:** it compares codecs, not containers. Converting a
-  WAV to `out.mp3` without naming a codec passes it — the codec has not changed,
-  only the container — and writes PCM into an MP3 container, reporting success.
-  Keep the container and codec consistent until `OutputFormat` declares what it
-  can carry.
+  A container that cannot carry the codec is refused too: every output format
+  declares what it carries, so converting a WAV to `out.mp3` fails with "the
+  mp3 container cannot carry pcm audio" instead of writing PCM into an MP3.
 - **No MP4, MOV, WebM or Matroska.** Those are containers, and they live in
   [ts-videos][ts-videos]; feed their packets here.
 - **Refused rather than guessed at:** ALAC (no decoder), 32-bit FLAC, Vorbis

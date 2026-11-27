@@ -3,7 +3,7 @@
  * Implements RIFF/WAVE format demuxing/muxing
  */
 
-import type { Source, Target, AudioTrack, EncodedPacket, AudioMetadata, SampleFormat } from '@ts-audio/core'
+import type { Source, Target, AudioTrack, EncodedPacket, AudioMetadata, SampleFormat, AudioCodec } from '@ts-audio/core'
 import { InputFormat, OutputFormat, Demuxer, Muxer, Reader } from '@ts-audio/core'
 
 // RIFF chunk IDs
@@ -710,6 +710,7 @@ export class WavInputFormat extends InputFormat {
 }
 
 export class WavOutputFormat extends OutputFormat {
+  get supportedCodecs(): AudioCodec[] { return ['pcm'] }
   get name(): string { return 'wav' }
   get mimeType(): string { return 'audio/wav' }
   get extension(): string { return 'wav' }
@@ -720,6 +721,7 @@ export class WavOutputFormat extends OutputFormat {
 }
 
 export class Rf64OutputFormat extends OutputFormat {
+  get supportedCodecs(): AudioCodec[] { return ['pcm'] }
   get name(): string { return 'rf64' }
   get mimeType(): string { return 'audio/wav' }
   get extension(): string { return 'wav' }
@@ -734,6 +736,7 @@ export class Rf64OutputFormat extends OutputFormat {
  * Automatically switches to RF64 when file exceeds 4GB
  */
 export class AutoWavOutputFormat extends OutputFormat {
+  get supportedCodecs(): AudioCodec[] { return ['pcm'] }
   get name(): string { return 'wav' }
   get mimeType(): string { return 'audio/wav' }
   get extension(): string { return 'wav' }

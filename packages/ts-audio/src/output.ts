@@ -3,7 +3,7 @@
  */
 
 import type { Target, AudioTrackConfig, OutputAudioTrack, EncodedPacket, AudioMetadata } from './types'
-import { Muxer, OutputFormat } from './muxer'
+import { assertCodecSupported, Muxer, OutputFormat } from './muxer'
 
 /**
  * Registered output formats
@@ -85,6 +85,10 @@ export class Output {
    * Add an audio track
    */
   addAudioTrack(config: AudioTrackConfig): OutputAudioTrack {
+    // Checked here rather than in the muxer, which does not know its format,
+    // so every route to an output is covered: Conversion, the CLI, the
+    // derivative generator and anyone holding an Output directly.
+    assertCodecSupported(this.format, config.codec)
     return this.muxer.addAudioTrack(config)
   }
 

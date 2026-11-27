@@ -34,7 +34,7 @@ export {
 
 // Demuxer/Muxer
 export { Demuxer, InputFormat } from './demuxer'
-export { Muxer, OutputFormat, AsyncMutex } from './muxer'
+export { Muxer, OutputFormat, AsyncMutex, assertCodecSupported, codecMatches } from './muxer'
 
 // High-level API
 export { Input, createInput, registerInputFormat, getInputFormats, detectFormat } from './input'

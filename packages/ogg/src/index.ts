@@ -559,6 +559,7 @@ export class OggInputFormat extends InputFormat {
 }
 
 export class OggOutputFormat extends OutputFormat {
+  get supportedCodecs(): AudioCodec[] { return ['vorbis', 'opus', 'flac'] }
   get name(): string { return 'ogg' }
   get mimeType(): string { return 'audio/ogg' }
   get extension(): string { return 'ogg' }

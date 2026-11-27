@@ -53,16 +53,40 @@ import { assertPacketCopyConversion } from '@ts-audio/core'
 assertPacketCopyConversion(track, options) // throws with the same message
 ```
 
-## A gap worth knowing about
+## Containers are checked too
 
-The guard compares the **codec** you asked for against the track's. It does not
-yet check that the output *container* can carry that codec. So converting a WAV
-to `out.mp3` without naming a codec passes the guard — the codec has not
-changed, only the container — and writes PCM packets into an MP3 container,
-reporting success. The result is not playable.
+The guard compares the codec you asked for against the track's. Separately,
+every output format declares which codecs its container can carry, and adding a
+track the container cannot hold is refused before anything is written:
 
-Until `OutputFormat` declares which codecs it can carry, keep the container and
-the codec consistent: WAV in, WAV out.
+```
+Error: The mp3 container cannot carry pcm audio; it carries mp3
+```
+
+So converting a WAV to `out.mp3` fails even without naming a codec — the codec
+has not changed, only the container, and an MP3 file holding PCM packets is not
+something any player will open.
+
+| Container | Carries |
+| --- | --- |
+| WAV, RF64 | `pcm` and all its layouts |
+| MP3 | `mp3` |
+| AAC (ADTS) | `aac` |
+| FLAC | `flac` |
+| Ogg | `vorbis`, `opus`, `flac` |
+
+You can ask in advance:
+
+```ts
+import { assertCodecSupported, codecMatches } from '@ts-audio/core'
+
+assertCodecSupported(outputFormat, track.codec) // throws with the same message
+codecMatches('pcm', 'pcm_s16le') // true
+```
+
+An `OutputFormat` of your own that declares nothing — `supportedCodecs` returns
+an empty list — is not checked, so a format written before this existed keeps
+working.
 
 ## Encoding with the platform
 
