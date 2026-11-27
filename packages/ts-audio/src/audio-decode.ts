@@ -48,6 +48,7 @@ const decoders = new Map<string, AudioDecoderFactory>()
  */
 const builtInDecoders: Record<string, () => Promise<AudioDecoderFactory>> = {
   aac: async () => (await import('@ts-audio/aac')).createAacDecoder,
+  flac: async () => (await import('@ts-audio/flac')).createFlacDecoder,
   mp3: async () => (await import('@ts-audio/mp3')).createMp3Decoder,
   opus: async () => (await import('@ts-audio/opus')).createOpusDecoder,
 }

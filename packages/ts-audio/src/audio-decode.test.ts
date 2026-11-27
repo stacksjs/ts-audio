@@ -245,6 +245,7 @@ describe('compressed codecs', () => {
   test('says which codecs it can read without loading a decoder for them', () => {
     expect(canDecodeAudioCodec('pcm_s16le')).toBe(true)
     expect(canDecodeAudioCodec('aac')).toBe(true)
+    expect(canDecodeAudioCodec('flac')).toBe(true)
     expect(canDecodeAudioCodec('mp3')).toBe(true)
     expect(canDecodeAudioCodec('opus')).toBe(true)
     expect(canDecodeAudioCodec('vorbis')).toBe(false)

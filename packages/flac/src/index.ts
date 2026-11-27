@@ -5,6 +5,8 @@
 
 import type { Source, Target, AudioTrack, EncodedPacket, AudioMetadata, FlacStreamInfo, FlacPicture, VorbisComment } from '@ts-audio/core'
 import { InputFormat, OutputFormat, Demuxer, Muxer, Reader } from '@ts-audio/core'
+import { parseFlacFrameHeader, parseFlacStreamInfo } from './flac-decoder'
+import { readFlacFrames } from './flac-audio'
 
 // FLAC magic number
 const FLAC_MAGIC = 0x664C6143 // "fLaC"
@@ -17,9 +19,6 @@ const BLOCK_SEEKTABLE = 3
 const BLOCK_VORBIS_COMMENT = 4
 const BLOCK_CUESHEET = 5
 const BLOCK_PICTURE = 6
-
-// Frame sync code
-const FRAME_SYNC = 0x3FFE
 
 // Picture types
 const PICTURE_TYPES = [
@@ -46,38 +45,9 @@ interface FlacFrame {
   timestamp: number
 }
 
+/** The STREAMINFO block; the decoder module owns the parse so there is one of it. */
 function parseStreamInfo(data: Uint8Array): FlacStreamInfo {
-  const view = new DataView(data.buffer, data.byteOffset, data.byteLength)
-
-  const minBlockSize = view.getUint16(0, false)
-  const maxBlockSize = view.getUint16(2, false)
-  const minFrameSize = (data[4] << 16) | (data[5] << 8) | data[6]
-  const maxFrameSize = (data[7] << 16) | (data[8] << 8) | data[9]
-
-  // Sample rate (20 bits), channels (3 bits), bits per sample (5 bits)
-  const sampleRate = (data[10] << 12) | (data[11] << 4) | (data[12] >> 4)
-  const channels = ((data[12] >> 1) & 0x07) + 1
-  const bitsPerSample = ((data[12] & 0x01) << 4) | (data[13] >> 4) + 1
-
-  // Total samples (36 bits)
-  const totalSamplesHigh = data[13] & 0x0F
-  const totalSamplesLow = (data[14] << 24) | (data[15] << 16) | (data[16] << 8) | data[17]
-  const totalSamples = (BigInt(totalSamplesHigh) << 32n) | BigInt(totalSamplesLow >>> 0)
-
-  // MD5 signature
-  const md5 = data.subarray(18, 34)
-
-  return {
-    minBlockSize,
-    maxBlockSize,
-    minFrameSize,
-    maxFrameSize,
-    sampleRate,
-    channels,
-    bitsPerSample,
-    totalSamples,
-    md5,
-  }
+  return parseFlacStreamInfo(data)
 }
 
 function parseVorbisComment(data: Uint8Array): VorbisComment {
@@ -219,6 +189,7 @@ function vorbisCommentToMetadata(vc: VorbisComment): AudioMetadata {
 
 export class FlacDemuxer extends Demuxer {
   private streamInfo: FlacStreamInfo | null = null
+  private streamInfoBlock: Uint8Array | null = null
   private vorbisComment: VorbisComment | null = null
   private pictures: FlacPicture[] = []
   private frames: FlacFrame[] = []
@@ -290,6 +261,9 @@ export class FlacDemuxer extends Demuxer {
       sampleRate: this.streamInfo.sampleRate,
       channels: this.streamInfo.channels,
       bitDepth: this.streamInfo.bitsPerSample,
+      // A FLAC decoder is configured from STREAMINFO, so hand it over as the
+      // track's description, as Matroska and MP4 do for their FLAC tracks.
+      codecDescription: this.streamInfoBlock ?? undefined,
       isDefault: true,
     }
 
@@ -314,6 +288,7 @@ export class FlacDemuxer extends Demuxer {
     switch (block.type) {
       case BLOCK_STREAMINFO:
         this.streamInfo = parseStreamInfo(block.data)
+        this.streamInfoBlock = block.data
         break
       case BLOCK_VORBIS_COMMENT:
         this.vorbisComment = parseVorbisComment(block.data)
@@ -327,87 +302,29 @@ export class FlacDemuxer extends Demuxer {
   private async scanFrames(): Promise<void> {
     if (!this.streamInfo) return
 
-    this.reader.position = this.audioDataStart
     const fileSize = await this.reader.getSize() ?? 0
+    const length = fileSize - this.audioDataStart
+    if (length <= 0) return
+
+    this.reader.position = this.audioDataStart
+    const audio = await this.reader.readBytes(length)
+    if (!audio) return
+
+    // A FLAC frame states no length, so each one runs to the next header that
+    // passes its CRC-8. Checking that CRC is what stops a 0x3FFE inside
+    // residual data from being read as the start of a frame.
     let sampleNumber = 0n
-
-    while (this.reader.position < fileSize - 2) {
-      const pos = this.reader.position
-      const syncBytes = await this.reader.readBytes(2)
-      if (!syncBytes) break
-
-      // Check for frame sync (14 bits: 0x3FFE)
-      const syncWord = ((syncBytes[0] << 8) | syncBytes[1]) >> 2
-      if (syncWord !== FRAME_SYNC) {
-        this.reader.position = pos + 1
-        continue
-      }
-
-      // Read frame header to get block size
-      this.reader.position = pos
-      const headerBytes = await this.reader.readBytes(16)
-      if (!headerBytes) break
-
-      // Parse enough to get block size
-      const blockSizeCode = (headerBytes[2] >> 4) & 0x0F
-      let blockSize: number
-
-      switch (blockSizeCode) {
-        case 0:
-          blockSize = 0
-          break
-        case 1:
-          blockSize = 192
-          break
-        case 2:
-        case 3:
-        case 4:
-        case 5:
-          blockSize = 576 * (1 << (blockSizeCode - 2))
-          break
-        case 6:
-          blockSize = 0 // Read from end of header
-          break
-        case 7:
-          blockSize = 0 // Read from end of header
-          break
-        default:
-          blockSize = 256 * (1 << (blockSizeCode - 8))
-      }
-
-      // Skip to find frame end (look for next sync or EOF)
-      this.reader.position = pos + 16
-      let frameEnd = fileSize
-
-      while (this.reader.position < fileSize - 2) {
-        const nextSync = await this.reader.readBytes(2)
-        if (!nextSync) break
-        const nextSyncWord = ((nextSync[0] << 8) | nextSync[1]) >> 2
-        if (nextSyncWord === FRAME_SYNC) {
-          frameEnd = this.reader.position - 2
-          break
-        }
-        this.reader.position--
-      }
-
-      // Read full frame
-      this.reader.position = pos
-      const frameSize = frameEnd - pos
-      const frameData = await this.reader.readBytes(frameSize)
-      if (!frameData) break
-
-      const timestamp = Number(sampleNumber) / this.streamInfo.sampleRate
-
+    for (const data of readFlacFrames(audio, 0)) {
+      const header = parseFlacFrameHeader(data, 0)
+      if (!header) continue
       this.frames.push({
-        data: frameData,
-        offset: pos,
-        blockSize: blockSize || this.streamInfo.maxBlockSize,
+        data,
+        offset: this.audioDataStart + (data.byteOffset - audio.byteOffset),
+        blockSize: header.blockSize,
         sampleNumber,
-        timestamp,
+        timestamp: Number(sampleNumber) / this.streamInfo.sampleRate,
       })
-
-      sampleNumber += BigInt(blockSize || this.streamInfo.maxBlockSize)
-      this.reader.position = frameEnd
+      sampleNumber += BigInt(header.blockSize)
     }
   }
 
@@ -552,3 +469,9 @@ export const FLAC_OUTPUT: FlacOutputFormat = new FlacOutputFormat()
 export type { MetadataBlock, FlacFrame }
 export { parseStreamInfo, parseVorbisComment, parsePicture, vorbisCommentToMetadata }
 export { BLOCK_STREAMINFO, BLOCK_PADDING, BLOCK_APPLICATION, BLOCK_SEEKTABLE, BLOCK_VORBIS_COMMENT, BLOCK_CUESHEET, BLOCK_PICTURE }
+
+// Decoding FLAC to samples
+export { FlacDecodeError, FlacDecoder, flacMd5Bytes, flacSamplesToFloat, parseFlacFrameHeader, parseFlacStreamInfo } from './flac-decoder'
+export type { FlacDecodedFrame, FlacFrameHeader, FlacStreamShape } from './flac-decoder'
+export { createFlacDecoder, decodeFlacFile, isFlac, readFlacFrames, readFlacMetadata } from './flac-audio'
+export type { DecodedFlac, DecodeFlacOptions } from './flac-audio'
