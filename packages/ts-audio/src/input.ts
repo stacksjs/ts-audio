@@ -4,6 +4,7 @@
 
 import type { Source, AudioTrack, EncodedPacket, AudioMetadata } from './types'
 import { createSource } from './source'
+import { defaultInputFormats } from './default-formats'
 import { Demuxer, InputFormat } from './demuxer'
 
 /**
@@ -34,6 +35,15 @@ export async function detectFormat(source: Source): Promise<InputFormat | null> 
       return format
     }
   }
+  // Nothing registered recognises it, so try the readers that ship with
+  // ts-audio. Without this an `Input` given no format could only ever read
+  // what the caller had registered by hand, which is why the CLI could not
+  // open a file at all.
+  for (const format of await defaultInputFormats()) {
+    if (await format.canRead(source)) {
+      return format
+    }
+  }
   return null
 }
 
@@ -53,6 +63,7 @@ export class Input {
   private demuxer: Demuxer | null = null
   private format: InputFormat | null = null
   private initialized = false
+  private initPromise: Promise<void> | null = null
 
   constructor(options: InputOptions) {
     this.source = typeof options.source === 'string' ||
@@ -67,8 +78,16 @@ export class Input {
    * Initialize the input and detect format
    */
   private async ensureInit(): Promise<void> {
-    if (this.initialized) return
+    // Memoised rather than guarded by a flag. Every accessor below awaits
+    // this, so a caller doing `Promise.all([getTracks(), getDuration(), ...])`
+    // starts several at once; a flag only set at the end let all of them past,
+    // each building its own demuxer over the same source and racing to assign
+    // it. That read as a file with no tracks and no duration.
+    this.initPromise ??= this.initialize()
+    return this.initPromise
+  }
 
+  private async initialize(): Promise<void> {
     if (!this.format) {
       this.format = await detectFormat(this.source)
       if (!this.format) {
@@ -76,8 +95,9 @@ export class Input {
       }
     }
 
-    this.demuxer = this.format.createDemuxer(this.source)
-    await this.demuxer.init()
+    const demuxer = this.format.createDemuxer(this.source)
+    await demuxer.init()
+    this.demuxer = demuxer
     this.initialized = true
   }
 

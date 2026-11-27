@@ -18,6 +18,7 @@ import type { AudioDecoderFactory, AudioPacketDecoder, DecodedAudio, DecodedAudi
 import type { AudioCodec, AudioTrack, EncodedPacket, Source } from './types'
 import { AudioTooLongError, UnsupportedAudioCodecError } from './audio-errors'
 import { decodeWav, encodeWav, isWav, mixChannels, pcmPacketDecoder, resampleAudio } from './audio-samples'
+import { defaultInputFormats, optionalPackage as optional } from './default-formats'
 import { Input } from './input'
 import { Reader } from './reader'
 import { createSource, getSourceSize, readSourceBuffer } from './source'
@@ -38,6 +39,7 @@ export {
   mixChannels,
   resampleAudio,
 } from './audio-samples'
+export { defaultInputFormats } from './default-formats'
 
 const decoders = new Map<string, AudioDecoderFactory>()
 
@@ -75,41 +77,6 @@ export function registerAudioDecoder(codec: AudioCodec, factory: AudioDecoderFac
 /** Whether `decodeAudio` can read this codec: PCM always, anything else once a decoder is registered. */
 export function canDecodeAudioCodec(codec: AudioCodec): boolean {
   return codec.startsWith('pcm_') || decoders.has(codec) || codec in builtInDecoders
-}
-
-/** A sibling package, or null when it is not installed. */
-async function optional<T>(load: () => Promise<T>): Promise<T | null> {
-  try {
-    return await load()
-  }
-  catch {
-    return null
-  }
-}
-
-/**
- * The container readers that are installed, strong magic numbers first so
- * that a frame-sniffing reader never claims a file another one owns. The
- * packages are optional, so a missing one is skipped.
- */
-export async function defaultInputFormats(): Promise<InputFormat[]> {
-  const formats: InputFormat[] = []
-  const wav = await optional(() => import('@ts-audio/wav'))
-  if (wav)
-    formats.push(new wav.WavInputFormat())
-  const flac = await optional(() => import('@ts-audio/flac'))
-  if (flac)
-    formats.push(new flac.FlacInputFormat())
-  const ogg = await optional(() => import('@ts-audio/ogg'))
-  if (ogg)
-    formats.push(new ogg.OggInputFormat())
-  const mp3 = await optional(() => import('@ts-audio/mp3'))
-  if (mp3)
-    formats.push(new mp3.Mp3InputFormat())
-  const aac = await optional(() => import('@ts-audio/aac'))
-  if (aac)
-    formats.push(new aac.AacInputFormat())
-  return formats
 }
 
 export interface DecodeAudioOptions {
