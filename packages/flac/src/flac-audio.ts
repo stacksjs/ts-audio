@@ -17,28 +17,68 @@ export function isFlac(bytes: Uint8Array): boolean {
   return bytes.length >= 4 && bytes[0] === 0x66 && bytes[1] === 0x4C && bytes[2] === 0x61 && bytes[3] === 0x43
 }
 
-/** Where the frames start, and the STREAMINFO block before them. */
-export function readFlacMetadata(bytes: Uint8Array): { streamInfo: FlacStreamInfo, audioStart: number } {
-  if (!isFlac(bytes))
-    throw new FlacDecodeError('Not a FLAC file')
-  let at = 4
+/** The STREAMINFO block type, which comes first in any well-formed list. */
+const BLOCK_STREAMINFO = 0
+
+/** The length STREAMINFO always has. */
+const STREAMINFO_LENGTH = 34
+
+/** Walks a FLAC metadata block list: the STREAMINFO in it, and where the list ends. */
+function readMetadataBlocks(bytes: Uint8Array, at: number): { streamInfo: FlacStreamInfo | null, end: number, complete: boolean } {
   let streamInfo: FlacStreamInfo | null = null
-  for (;;) {
-    if (at + 4 > bytes.length)
-      throw new FlacDecodeError('FLAC file ends inside its metadata')
+  while (at + 4 <= bytes.length) {
     const isLast = (bytes[at] & 0x80) !== 0
     const type = bytes[at] & 0x7F
     const length = (bytes[at + 1] << 16) | (bytes[at + 2] << 8) | bytes[at + 3]
     const body = at + 4
-    if (type === 0)
+    if (body + length > bytes.length)
+      break
+    if (type === BLOCK_STREAMINFO && !streamInfo && length >= STREAMINFO_LENGTH)
       streamInfo = parseFlacStreamInfo(bytes.subarray(body, body + length))
     at = body + length
     if (isLast)
-      break
+      return { streamInfo, end: at, complete: true }
   }
+  return { streamInfo, end: at, complete: false }
+}
+
+/** Where the frames start, and the STREAMINFO block before them. */
+export function readFlacMetadata(bytes: Uint8Array): { streamInfo: FlacStreamInfo, audioStart: number } {
+  if (!isFlac(bytes))
+    throw new FlacDecodeError('Not a FLAC file')
+  const { streamInfo, end, complete } = readMetadataBlocks(bytes, 4)
+  if (!complete)
+    throw new FlacDecodeError('FLAC file ends inside its metadata')
   if (!streamInfo)
     throw new FlacDecodeError('FLAC file has no STREAMINFO block')
-  return { streamInfo, audioStart: at }
+  return { streamInfo, audioStart: end }
+}
+
+/**
+ * The STREAMINFO a container hands over as a track's description, in any of
+ * the three shapes one arrives in:
+ *
+ * - "fLaC" then the metadata blocks, which is the WebCodecs registry's shape
+ *   and what Matroska's CodecPrivate holds;
+ * - the metadata blocks alone, which is MP4's dfLa box past its FullBox
+ *   header;
+ * - a bare STREAMINFO block, which is what this package's own demuxer has.
+ *
+ * Null where it is none of them. Telling the second from the third is safe:
+ * a STREAMINFO block header reads 0x00 or 0x80 then a length of 34, and for a
+ * bare block to begin the same way its minimum block size would have to be 0,
+ * which FLAC does not allow below 16.
+ */
+export function streamInfoFromDescription(description: Uint8Array): FlacStreamInfo | null {
+  if (description.length < STREAMINFO_LENGTH)
+    return null
+  if (isFlac(description))
+    return readMetadataBlocks(description, 4).streamInfo
+  const type = description[0] & 0x7F
+  const length = (description[1] << 16) | (description[2] << 8) | description[3]
+  if (type === BLOCK_STREAMINFO && length === STREAMINFO_LENGTH && description.length >= 4 + STREAMINFO_LENGTH)
+    return readMetadataBlocks(description, 0).streamInfo
+  return parseFlacStreamInfo(description)
 }
 
 /**
@@ -122,11 +162,13 @@ export function createFlacDecoder(track: AudioTrack): AudioPacketDecoder {
   }
   if (track.codecDescription?.length) {
     try {
-      const streamInfo = parseFlacStreamInfo(track.codecDescription)
-      shape = streamInfo
+      shape = streamInfoFromDescription(track.codecDescription) ?? shape
     }
     catch {
-      // A description that is not a STREAMINFO block leaves the track's own numbers in place.
+      // A description that holds no STREAMINFO leaves the track's own numbers
+      // in place; the frames themselves state the rate and depth unless they
+      // defer, and a frame that defers with nothing to defer to is refused by
+      // name rather than guessed at.
     }
   }
   const decoder = new FlacDecoder(shape)

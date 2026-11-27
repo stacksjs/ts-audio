@@ -473,5 +473,5 @@ export { BLOCK_STREAMINFO, BLOCK_PADDING, BLOCK_APPLICATION, BLOCK_SEEKTABLE, BL
 // Decoding FLAC to samples
 export { FlacDecodeError, FlacDecoder, flacMd5Bytes, flacSamplesToFloat, parseFlacFrameHeader, parseFlacStreamInfo } from './flac-decoder'
 export type { FlacDecodedFrame, FlacFrameHeader, FlacStreamShape } from './flac-decoder'
-export { createFlacDecoder, decodeFlacFile, isFlac, readFlacFrames, readFlacMetadata } from './flac-audio'
+export { createFlacDecoder, decodeFlacFile, isFlac, readFlacFrames, readFlacMetadata, streamInfoFromDescription } from './flac-audio'
 export type { DecodedFlac, DecodeFlacOptions } from './flac-audio'

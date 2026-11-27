@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto'
 import { describe, expect, test } from 'bun:test'
 import { crc16Flac, crc8Flac, decodeAudio, decodeAudioPackets } from '@ts-audio/core'
 import { FlacDecodeError, FlacDecoder, flacMd5Bytes, parseFlacFrameHeader, parseFlacStreamInfo } from './flac-decoder'
-import { createFlacDecoder, decodeFlacFile, isFlac, readFlacFrames, readFlacMetadata } from './flac-audio'
+import { createFlacDecoder, decodeFlacFile, isFlac, readFlacFrames, readFlacMetadata, streamInfoFromDescription } from './flac-audio'
 
 const fixture = (name: string): string => new URL(`../test/fixtures/voice/${name}`, import.meta.url).pathname
 const bytes = async (name: string): Promise<Uint8Array> => new Uint8Array(await Bun.file(fixture(name)).arrayBuffer())
@@ -284,5 +284,91 @@ function thirtyTwoBitFrame(frame: Uint8Array): Uint8Array {
   // sample size code does not change that length.
   const { length } = parseFlacFrameHeader(frame, 0)!
   copy[length - 1] = crc8Flac(copy.subarray(0, length - 1))
+  return copy
+}
+
+// ---------------------------------------------------------------------------
+// Track descriptions, as each container hands them over
+
+/** The metadata block list of a FLAC file: "fLaC" then every block. */
+function blockList(file: Uint8Array): Uint8Array {
+  const { audioStart } = readFlacMetadata(file)
+  return file.subarray(4, audioStart)
+}
+
+describe('FLAC track descriptions', () => {
+  test('reads STREAMINFO from every shape a container gives it', async () => {
+    const file = await bytes('voice-flac-24bit.flac')
+    const bare = rawStreamInfo(file)
+    const blocks = blockList(file)
+    const withMarker = file.subarray(0, 4 + blocks.length)
+
+    // "fLaC" then the blocks: the WebCodecs shape, and Matroska's CodecPrivate.
+    // The blocks alone: MP4's dfLa box past its FullBox header.
+    // A bare STREAMINFO block: what this package's own demuxer carries.
+    const forms = { 'fLaC and blocks': withMarker, 'blocks alone': blocks, 'bare STREAMINFO': bare }
+    for (const [name, description] of Object.entries(forms)) {
+      const streamInfo = streamInfoFromDescription(description)
+      expect(streamInfo, name).not.toBeNull()
+      expect(streamInfo!.sampleRate, name).toBe(48000)
+      expect(streamInfo!.bitsPerSample, name).toBe(24)
+      expect(streamInfo!.channels, name).toBe(1)
+    }
+  })
+
+  test('configures a decoder the same way from each of them', async () => {
+    const file = await bytes('voice-flac-24bit.flac')
+    const { audioStart } = readFlacMetadata(file)
+    const frame = readFlacFrames(file, audioStart)[0]
+    const packet = { data: frame, timestamp: 0, duration: 0, isKeyframe: true, trackId: 1 }
+    const outputs = [file.subarray(0, 4 + blockList(file).length), blockList(file), rawStreamInfo(file)].map((codecDescription) => {
+      const decoder = createFlacDecoder({ type: 'audio', id: 1, index: 0, codec: 'flac', sampleRate: 0, channels: 0, codecDescription })
+      return decoder.decode(packet)!
+    })
+    for (const output of outputs) {
+      expect(output.sampleRate).toBe(48000)
+      expect(Array.from(output.channels[0].subarray(0, 24))).toEqual(Array.from(outputs[0].channels[0].subarray(0, 24)))
+    }
+  })
+
+  test('is not fooled by a description it cannot read', () => {
+    // A "fLaC" marker with no blocks after it, and plain rubbish of the same length.
+    expect(streamInfoFromDescription(new Uint8Array([0x66, 0x4C, 0x61, 0x43, ...new Array(34).fill(0)]))).toBeNull()
+    expect(streamInfoFromDescription(new Uint8Array(8))).toBeNull()
+    expect(streamInfoFromDescription(new Uint8Array(0))).toBeNull()
+  })
+
+  test('refuses a frame that defers to a STREAMINFO it was never given', async () => {
+    const file = await bytes('voice-flac-mono.flac')
+    const { audioStart } = readFlacMetadata(file)
+    const frame = deferringFrame(readFlacFrames(file, audioStart)[0])
+
+    // Nothing to defer to: named, not guessed.
+    const bare = createFlacDecoder({ type: 'audio', id: 1, index: 0, codec: 'flac', sampleRate: 0, channels: 0 })
+    expect(() => bare.decode({ data: frame, timestamp: 0, duration: 0, isKeyframe: true, trackId: 1 })).toThrow(FlacDecodeError)
+    expect(() => bare.decode({ data: frame, timestamp: 0, duration: 0, isKeyframe: true, trackId: 1 })).toThrow(/sample rate/)
+
+    // The track's own numbers are enough, even with no description at all.
+    const fromTrack = createFlacDecoder({ type: 'audio', id: 1, index: 0, codec: 'flac', sampleRate: 44100, channels: 1, bitDepth: 16 })
+    const chunk = fromTrack.decode({ data: frame, timestamp: 0, duration: 0, isKeyframe: true, trackId: 1 })!
+    expect(chunk.sampleRate).toBe(44100)
+    expect(chunk.channels[0].length).toBeGreaterThan(0)
+  })
+})
+
+/** The same frame, with its header asking the stream for the sample rate and bit depth. */
+function deferringFrame(frame: Uint8Array): Uint8Array {
+  const copy = new Uint8Array(frame)
+  // Byte 2 holds the block size code then the sample rate code; byte 3 the
+  // channel assignment, then the sample size code in bits 1 to 3. Zeroing the
+  // two codes means "ask STREAMINFO" and leaves the header the same length.
+  copy[2] = copy[2] & 0xF0
+  copy[3] = copy[3] & 0xF1
+  const { length } = parseFlacFrameHeader(frame, 0)!
+  copy[length - 1] = crc8Flac(copy.subarray(0, length - 1))
+  // The frame's own CRC-16, its last two bytes, covers the header too.
+  const crc = crc16Flac(copy.subarray(0, copy.length - 2))
+  copy[copy.length - 2] = (crc >> 8) & 0xFF
+  copy[copy.length - 1] = crc & 0xFF
   return copy
 }
