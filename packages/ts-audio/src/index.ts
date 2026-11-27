@@ -44,6 +44,9 @@ export * from './delivery'
 export * from './delivery-workflow'
 export * from './native-transcode'
 
+// Transforms
+export { imdct } from './transform'
+
 // Decoding to samples
 export { AudioTooLongError, UnsupportedAudioCodecError } from './audio-errors'
 export type {

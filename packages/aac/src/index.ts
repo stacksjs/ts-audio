@@ -347,6 +347,8 @@ export type { AdtsHeader, AdtsFrame, AacProfile }
 export { parseAdtsHeader, createAdtsHeader, getSampleRateIndex, AAC_SAMPLE_RATES, AAC_PROFILES }
 
 // Decoding AAC to samples
-export { AAC_FRAME_LENGTH, AacDecodeError, createAacDecoder, imdct } from './aac-decoder'
+export { AAC_FRAME_LENGTH, AacDecodeError, createAacDecoder } from './aac-decoder'
+/** The inverse MDCT lives in @ts-audio/core now, since Vorbis needs the same one; re-exported here, where it was. */
+export { imdct } from '@ts-audio/core'
 export { AAC_CONFIG_SAMPLE_RATES, parseAacAudioSpecificConfig } from './aac-config'
 export type { AacAudioSpecificConfig } from './aac-config'

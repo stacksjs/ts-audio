@@ -1,8 +1,8 @@
 import type { EncodedPacket } from '@ts-audio/core'
 import { describe, expect, test } from 'bun:test'
-import { createSource, decodeAudio, decodeAudioToWav, decodeWav, Input, resampleAudio } from '@ts-audio/core'
+import { createSource, decodeAudio, decodeAudioToWav, decodeWav, imdct, Input, resampleAudio } from '@ts-audio/core'
 import { AacInputFormat } from './index'
-import { AacDecodeError, createAacDecoder, imdct } from './aac-decoder'
+import { AacDecodeError, createAacDecoder } from './aac-decoder'
 
 const fixture = (path: string): string => new URL(`../test/fixtures/voice/${path}`, import.meta.url).pathname
 
