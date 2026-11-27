@@ -69,6 +69,7 @@
     "@ts-audio/wav": "workspace:*",
     "@ts-audio/aac": "workspace:*",
     "@ts-audio/flac": "workspace:*",
-    "@ts-audio/ogg": "workspace:*"
+    "@ts-audio/ogg": "workspace:*",
+    "@ts-audio/opus": "workspace:*"
   }
 }

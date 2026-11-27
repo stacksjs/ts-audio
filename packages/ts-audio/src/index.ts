@@ -44,6 +44,33 @@ export * from './delivery'
 export * from './delivery-workflow'
 export * from './native-transcode'
 
+// Decoding to samples
+export { AudioTooLongError, UnsupportedAudioCodecError } from './audio-errors'
+export type {
+  AudioDecoderFactory,
+  AudioPacketDecoder,
+  DecodedAudio,
+  DecodedAudioChunk,
+  PcmEncoding,
+} from './audio-samples'
+export {
+  decodeWav,
+  deinterleavePcm,
+  encodeWav,
+  isWav,
+  mixChannels,
+  pcmPacketDecoder,
+  resampleAudio,
+} from './audio-samples'
+export type { DecodeAudioOptions, DecodeAudioToWavOptions, DecodedWav } from './audio-decode'
+export {
+  canDecodeAudioCodec,
+  decodeAudio,
+  decodeAudioToWav,
+  defaultInputFormats,
+  registerAudioDecoder,
+} from './audio-decode'
+
 // Format registry
 export {
   formats,
