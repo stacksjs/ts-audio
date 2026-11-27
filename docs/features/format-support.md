@@ -1,239 +1,63 @@
 # Format Support
 
-Audiox supports a wide range of audio formats through its FFmpeg backend, making it versatile for various audio processing needs.
+## Containers
 
-## Supported Formats
+Read and written by the format packages. There is no ffmpeg behind any of them.
 
-### Input Formats
+| Container | Extensions | Read | Written |
+| --- | --- | --- | --- |
+| MP3 | `.mp3` | yes, with ID3v1 and ID3v2 | yes |
+| WAV / RF64 | `.wav` | yes | yes, switching to RF64 past 4 GB |
+| AAC (ADTS) | `.aac` | yes | yes |
+| FLAC | `.flac` | yes, with Vorbis comments and pictures | yes |
+| Ogg | `.ogg`, `.opus` | yes, Vorbis and Opus | yes |
 
-Audiox can read from virtually any audio format that FFmpeg supports:
+Writing means packaging packets into a container. It does not mean encoding —
+see [Conversion](./audio-conversion.md).
 
-| Format | Extension | Description |
-|--------|-----------|-------------|
-| MP3 | `.mp3` | MPEG Audio Layer III |
-| WAV | `.wav` | Waveform Audio File |
-| AAC | `.aac`, `.m4a` | Advanced Audio Coding |
-| FLAC | `.flac` | Free Lossless Audio Codec |
-| OGG | `.ogg` | Ogg Vorbis |
-| WMA | `.wma` | Windows Media Audio |
-| AIFF | `.aiff`, `.aif` | Audio Interchange File Format |
-| OPUS | `.opus` | Opus Interactive Audio Codec |
+### Not here
 
-### Output Formats
+MP4, MOV, M4A, WebM, Matroska and MPEG-TS are video containers and live in
+[ts-videos](https://github.com/stacksjs/ts-videos). It reads them and hands the
+audio tracks to ts-audio, so an M4A's AAC or a WebM's Opus still decodes — the
+container is just read elsewhere.
 
-Primary output formats with full codec support:
+## Codecs decoded to samples
 
-```ts
-// MP3 Output
-await audio('input.wav', 'output.mp3', {
-  codec: 'mp3',
-  bitrate: '192k',
-})
+| Codec | What is supported | What is not |
+| --- | --- | --- |
+| MP3 | MPEG-1, 2 and 2.5, Layer III, mono to joint stereo, LAME gapless numbers | Layer I and II, refused by name |
+| AAC | AAC-LC; the AAC core of HE-AAC and HE-AAC v2 | Main and LTP prediction, coupling channels, 960-sample frames |
+| Opus | SILK, CELT, hybrid; mono and stereo; mapping families 0 and 1 | More than two channels |
+| FLAC | 8, 12, 16, 20 and 24-bit; all four stereo modes | 32-bit, refused by name |
+| Vorbis | Floor 1, residue types 0, 1 and 2, channel coupling | Floor type 0, refused by name |
+| PCM | 8 to 32-bit integer, 32 and 64-bit float, A-law, µ-law | — |
 
-// WAV Output (Lossless)
-await audio('input.mp3', 'output.wav', {
-  codec: 'pcm_s16le',
-})
+`canDecodeAudioCodec(codec)` answers for any of these without loading a decoder.
 
-// AAC Output
-await audio('input.wav', 'output.aac', {
-  codec: 'aac',
-  bitrate: '128k',
-})
-```
+### Refused rather than guessed at
 
-## Format-Specific Options
+Where a stream uses something unimplemented, ts-audio throws an error naming it
+instead of returning plausible-sounding noise:
 
-### MP3 Format
+- **ALAC** — no decoder. Register your own with `registerAudioDecoder`.
+- **32-bit FLAC** — its side channel needs 33 bits, more than JavaScript's
+  bitwise operators carry.
+- **Vorbis floor type 0** — codes the envelope as LSP coefficients; no encoder
+  has chosen it in twenty years.
+- **AAC with 960-sample frames**, main or LTP prediction, coupling channels.
+- **MPEG audio Layer I and II** — recognised, and named as mp1 or mp2.
 
-MP3 is the most widely supported audio format:
+## Codecs encoded from samples
 
-```ts
-// High-quality MP3
-await audio('input.wav', 'output.mp3', {
-  codec: 'mp3',
-  bitrate: '320k',
-  sampleRate: 44100,
-  channels: 2,
-})
+PCM, into WAV or RF64. Nothing else: there are no compressing encoders here.
 
-// Voice-optimized MP3
-await audio('voice.wav', 'voice.mp3', {
-  codec: 'mp3',
-  bitrate: '64k',
-  sampleRate: 22050,
-  channels: 1,
-})
+Where the runtime provides WebCodecs, `transcodeAudioWithWebCodecs` uses the
+platform's own encoder for AAC, MP3 or Opus. Browsers have it; Bun currently
+does not.
 
-// Podcast MP3
-await audio('podcast.wav', 'podcast.mp3', {
-  codec: 'mp3',
-  bitrate: '128k',
-  sampleRate: 44100,
-  channels: 1,
-})
-```
+## Sample rates and depths
 
-### WAV Format
-
-WAV provides lossless, uncompressed audio:
-
-```ts
-// CD Quality WAV
-await audio('input.mp3', 'output.wav', {
-  codec: 'pcm_s16le',
-  sampleRate: 44100,
-  channels: 2,
-})
-
-// Speech Recognition WAV
-await audio('voice.mp3', 'voice.wav', {
-  codec: 'pcm_s16le',
-  sampleRate: 16000,
-  channels: 1,
-})
-
-// High-Resolution WAV
-await audio('master.flac', 'master.wav', {
-  codec: 'pcm_s24le',
-  sampleRate: 48000,
-  channels: 2,
-})
-```
-
-### AAC Format
-
-AAC offers better quality than MP3 at similar bitrates:
-
-```ts
-// Streaming AAC
-await audio('input.wav', 'output.aac', {
-  codec: 'aac',
-  bitrate: '128k',
-  sampleRate: 44100,
-  channels: 2,
-})
-
-// High-Quality AAC
-await audio('input.wav', 'output.aac', {
-  codec: 'aac',
-  bitrate: '256k',
-  sampleRate: 48000,
-  channels: 2,
-})
-```
-
-## CLI Format Commands
-
-Use the CLI for quick format conversions:
-
-```bash
-# Convert to MP3
-audiox convert song.wav song.mp3 --codec mp3 --bitrate 192k
-
-# Convert to WAV
-audiox convert song.mp3 song.wav --codec pcm_s16le
-
-# Convert to AAC
-audiox convert song.wav song.aac --codec aac --bitrate 128k
-
-# Convert FLAC to MP3
-audiox convert album.flac album.mp3 --codec mp3 --bitrate 320k
-```
-
-## Getting File Information
-
-Retrieve format information from any audio file:
-
-```ts
-import { audioInfo } from '@stacksjs/audiox'
-
-const info = await audioInfo('music.mp3')
-console.log(info)
-// [
-//   {
-//     codec: 'mp3',
-//     channels: 2,
-//     sampleRate: '44100',
-//     bitrate: '192000',
-//     duration: '180.5',
-//   }
-// ]
-```
-
-```bash
-# CLI info command
-audiox info music.mp3
-```
-
-## Format Detection
-
-Audiox automatically detects the input format:
-
-```ts
-// Format is auto-detected from the file
-await audio('unknown.audio', 'output.mp3', {
-  codec: 'mp3',
-})
-```
-
-## Cross-Format Conversion Matrix
-
-Common conversion scenarios:
-
-| From | To | Use Case |
-|------|-----|----------|
-| WAV | MP3 | Compress recordings for sharing |
-| MP3 | WAV | Prepare for editing in DAWs |
-| FLAC | MP3 | Create portable copies |
-| WAV | AAC | Prepare for streaming |
-| Any | WAV (16kHz mono) | Speech recognition preprocessing |
-
-## Best Practices for Format Selection
-
-### For Music Distribution
-
-```ts
-// High-quality MP3 for downloads
-await audio('master.wav', 'release.mp3', {
-  codec: 'mp3',
-  bitrate: '320k',
-  sampleRate: 44100,
-  channels: 2,
-})
-```
-
-### For Podcasts
-
-```ts
-// Podcast-optimized audio
-await audio('episode.wav', 'episode.mp3', {
-  codec: 'mp3',
-  bitrate: '128k',
-  sampleRate: 44100,
-  channels: 1,
-})
-```
-
-### For Voice Assistants
-
-```ts
-// Voice recognition format
-await audio('command.mp3', 'command.wav', {
-  codec: 'pcm_s16le',
-  sampleRate: 16000,
-  channels: 1,
-})
-```
-
-### For Web Streaming
-
-```ts
-// Web-optimized AAC
-await audio('track.wav', 'track.aac', {
-  codec: 'aac',
-  bitrate: '128k',
-  sampleRate: 44100,
-  channels: 2,
-})
-```
+Whatever the file states. Nothing is resampled unless you ask — `resampleAudio`
+and `decodeAudioToWav` do it on request, with a Kaiser-windowed sinc whose
+cutoff sits below both rates' Nyquist frequency.

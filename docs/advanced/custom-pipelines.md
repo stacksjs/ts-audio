@@ -1,454 +1,154 @@
-# Custom Pipelines
+# Delivery Plans
 
-Audiox supports building custom audio processing pipelines for complex workflows that require multiple processing steps, conditional logic, or integration with external services.
+Serving audio to browsers means deciding which formats to offer, at what
+bitrate, and whether this runtime can even produce them. `@ts-audio/core` has
+the planning pieces for that, separately from the decoding.
 
-## Pipeline Architecture
-
-A pipeline consists of multiple processing stages that transform audio data:
+## Planning outputs
 
 ```ts
-import { audio, audioInfo } from '@stacksjs/audiox'
+import { buildAudioDeliveryPlan, detectAudioRuntimeCapabilities } from '@ts-audio/core'
 
-interface PipelineStage {
-  name: string
-  process: (input: string, output: string) => Promise<void>
-}
+const capabilities = await detectAudioRuntimeCapabilities()
+const plan = buildAudioDeliveryPlan(
+  { codec: 'aac', container: 'aac', duration: 180, sampleRate: 44100, channels: 2 },
+  { formats: ['opus', 'aac', 'mp3'], profile: 'music', maxBitrate: 192_000 },
+  capabilities,
+)
+```
 
-interface Pipeline {
-  stages: PipelineStage[]
-  run: (input: string, finalOutput: string) => Promise<void>
-}
+Each planned output says what it would take:
 
-function createPipeline(stages: PipelineStage[]): Pipeline {
-  return {
-    stages,
-    async run(input: string, finalOutput: string) {
-      let currentInput = input
-
-      for (let i = 0; i < stages.length; i++) {
-        const stage = stages[i]
-        const isLast = i === stages.length - 1
-        const output = isLast ? finalOutput : `/tmp/stage-${i}-${Date.now()}.wav`
-
-        console.log(`Running stage: ${stage.name}`)
-        await stage.process(currentInput, output)
-
-        // Clean up intermediate files
-        if (i > 0 && currentInput.startsWith('/tmp/')) {
-          await Bun.write(currentInput, '') // Clean up
-        }
-
-        currentInput = output
-      }
-    },
-  }
+```ts
+{
+  format: 'opus',
+  container: 'ogg',
+  mimeType: 'audio/ogg; codecs=opus',
+  extension: 'ogg',
+  bitrate: 128000,
+  action: 'transcode',   // or 'copy', when the source already matches
+  available: false,      // whether this runtime can do it
+  reason: 'No opus encoder is available',
 }
 ```
 
-## Basic Pipeline Example
+`action` is `copy` when the source codec and container already match the output,
+which needs no encoder at all. Otherwise it is `transcode`, and `available`
+depends on what `detectAudioRuntimeCapabilities` found — it asks the platform's
+WebCodecs `AudioEncoder` which codecs it supports, and reports none where there
+is no `AudioEncoder`, as in Bun today.
 
-Create a simple multi-stage processing pipeline:
+To fail early rather than part-way through:
 
 ```ts
-import { audio } from '@stacksjs/audiox'
+import { assertAudioPlanExecutable } from '@ts-audio/core'
 
-const pipeline = createPipeline([
-  {
-    name: 'Normalize to WAV',
-    async process(input, output) {
-      await audio(input, output, {
-        codec: 'pcm_s16le',
-        sampleRate: 44100,
-        channels: 2,
-      })
-    },
-  },
-  {
-    name: 'Convert to Mono',
-    async process(input, output) {
-      await audio(input, output, {
-        codec: 'pcm_s16le',
-        channels: 1,
-      })
-    },
-  },
-  {
-    name: 'Encode to MP3',
-    async process(input, output) {
-      await audio(input, output, {
-        codec: 'mp3',
-        bitrate: '192k',
-        quality: 2,
-      })
-    },
-  },
-])
-
-await pipeline.run('input.flac', 'output.mp3')
+assertAudioPlanExecutable(plan) // throws naming each unavailable format
 ```
 
-## Conditional Pipeline
-
-Execute stages based on input file characteristics:
+## Bitrates
 
 ```ts
-import { audio, audioInfo } from '@stacksjs/audiox'
+import { recommendAudioBitrate } from '@ts-audio/core'
 
-interface ConditionalStage {
-  name: string
-  condition: (info: any) => boolean
-  process: (input: string, output: string) => Promise<void>
-}
-
-async function runConditionalPipeline(
-  input: string,
-  output: string,
-  stages: ConditionalStage[],
-) {
-  const info = await audioInfo(input)
-  const fileInfo = info[0]
-
-  let currentInput = input
-  let stageIndex = 0
-
-  for (const stage of stages) {
-    if (!stage.condition(fileInfo)) {
-      console.log(`Skipping stage: ${stage.name}`)
-      continue
-    }
-
-    const isLast = stageIndex === stages.filter(s => s.condition(fileInfo)).length - 1
-    const stageOutput = isLast
-      ? output
-      : `/tmp/conditional-${stageIndex}-${Date.now()}.wav`
-
-    console.log(`Running stage: ${stage.name}`)
-    await stage.process(currentInput, stageOutput)
-    currentInput = stageOutput
-    stageIndex++
-  }
-}
-
-// Usage
-await runConditionalPipeline('input.mp3', 'output.wav', [
-  {
-    name: 'Downsample High Sample Rate',
-    condition: info => Number.parseInt(info.sampleRate) > 48000,
-    async process(input, output) {
-      await audio(input, output, {
-        codec: 'pcm_s16le',
-        sampleRate: 48000,
-      })
-    },
-  },
-  {
-    name: 'Convert Stereo to Mono',
-    condition: info => info.channels > 1,
-    async process(input, output) {
-      await audio(input, output, {
-        codec: 'pcm_s16le',
-        channels: 1,
-      })
-    },
-  },
-  {
-    name: 'Final Encoding',
-    condition: () => true, // Always run
-    async process(input, output) {
-      await audio(input, output, {
-        codec: 'pcm_s16le',
-        sampleRate: 16000,
-      })
-    },
-  },
-])
+recommendAudioBitrate('opus', source, 'speech')
 ```
 
-## Parallel Processing Pipeline
+The `profile` is `'speech'`, `'music'` or `'general'`, and the recommendation
+accounts for the codec and the source's channel count. `maxBitrate` on the plan
+caps it.
 
-Process multiple tracks in parallel:
+## Content negotiation
+
+Given a plan and an `Accept` header, pick what to serve:
 
 ```ts
-import { audio } from '@stacksjs/audiox'
-import { readdir } from 'node:fs/promises'
-import { join, parse } from 'node:path'
+import { negotiateAudioOutput } from '@ts-audio/core'
 
-interface ParallelPipelineOptions {
-  inputDir: string
-  outputDir: string
-  concurrency: number
-  stages: PipelineStage[]
-}
+const chosen = negotiateAudioOutput(plan.outputs, request.headers.get('accept') ?? '*/*')
+```
 
-async function runParallelPipeline(options: ParallelPipelineOptions) {
-  const { inputDir, outputDir, concurrency, stages } = options
-  const files = await readdir(inputDir)
-  const audioFiles = files.filter(f =>
-    ['.mp3', '.wav', '.flac'].some(ext => f.endsWith(ext)),
-  )
+It honours quality values and prefers more specific media ranges, and only ever
+returns an output marked `available`.
 
-  const pipeline = createPipeline(stages)
+## HLS bundles
 
-  // Process in batches
-  for (let i = 0; i < audioFiles.length; i += concurrency) {
-    const batch = audioFiles.slice(i, i + concurrency)
+Given segments you have already produced, `createAudioDeliveryBundle` writes the
+playlist and collects the files:
 
-    await Promise.all(
-      batch.map(async (file) => {
-        const input = join(inputDir, file)
-        const output = join(outputDir, `${parse(file).name}.mp3`)
-        await pipeline.run(input, output)
-        console.log(`Completed: ${file}`)
-      }),
-    )
-  }
-}
+```ts
+import { createAudioDeliveryBundle } from '@ts-audio/core/delivery-workflow'
 
-// Usage
-await runParallelPipeline({
-  inputDir: './raw-audio',
-  outputDir: './processed',
-  concurrency: 4,
-  stages: [
-    {
-      name: 'Normalize',
-      async process(input, output) {
-        await audio(input, output, {
-          codec: 'pcm_s16le',
-          sampleRate: 44100,
-        })
-      },
-    },
-    {
-      name: 'Encode MP3',
-      async process(input, output) {
-        await audio(input, output, {
-          codec: 'mp3',
-          bitrate: '192k',
-        })
-      },
-    },
-  ],
+const bundle = await createAudioDeliveryBundle(plan, segments, {
+  playlistPath: 'hls/audio.m3u8',
+})
+// bundle.playlist is the m3u8; bundle.files maps paths to contents
+```
+
+Two kinds of protection are supported, and they are mutually exclusive:
+
+- `hlsAes128` encrypts each segment and writes `#EXT-X-KEY:METHOD=AES-128`.
+  The key, key URI and IV may each be a value or a function of the segment
+  index.
+- `drm` writes a `SAMPLE-AES` or `SAMPLE-AES-CTR` key line for FairPlay,
+  PlayReady or Widevine. The segments must already be encrypted —
+  `segmentsEncrypted` has to be `true`, and clear-key is rejected in favour of
+  native AES-128.
+
+## Chapters
+
+```ts
+import { normalizeAudioChapters } from '@ts-audio/core/delivery-workflow'
+
+const chapters = normalizeAudioChapters(
+  [{ title: 'Intro', startTime: 0 }, { title: 'Verse', startTime: 32 }],
+  duration,
+)
+```
+
+Each chapter's end defaults to the next one's start, or the duration. Overlaps,
+empty titles and out-of-range times throw rather than being silently adjusted.
+
+## Waveforms
+
+```ts
+import { buildWaveform, decodeAudio } from '@ts-audio/core'
+
+const { channels, sampleRate } = await decodeAudio('song.flac')
+const waveform = buildWaveform(channels, sampleRate, { samples: 1000, precision: 4 })
+```
+
+The result is a serialisable min/max peak pair per bucket per channel,
+normalised against the absolute peak, which is the shape a waveform display
+wants. `samples` caps the bucket count and `precision` the decimal places.
+
+## Transcripts
+
+```ts
+import { normalizeTranscript } from '@ts-audio/core'
+
+const { language, segments, vtt } = normalizeTranscript({
+  language: 'en',
+  segments: [{ startTime: 0, endTime: 2.5, text: 'Knee is fine.' }],
 })
 ```
 
-## Stream-Based Pipeline
+It validates the timing — no overlaps, no empty text, confidence between 0 and 1
+— numbers the segments, and renders WebVTT, with `<v speaker>` where a segment
+names one.
 
-Build pipelines using streams for memory efficiency:
-
-```ts
-import { audioWithStreamInput, audioWithStreamOut } from '@stacksjs/audiox'
-
-async function streamPipeline(inputPath: string, outputPath: string) {
-  const chunks: Uint8Array[] = []
-
-  // Stage 1: Read and process to intermediate format
-  const file = Bun.file(inputPath)
-  const stream = file.stream()
-
-  await audioWithStreamInput(stream, '/tmp/intermediate.wav', {
-    codec: 'pcm_s16le',
-    sampleRate: 44100,
-    channels: 1,
-  })
-
-  // Stage 2: Final encoding with stream output
-  await audioWithStreamOut(
-    '/tmp/intermediate.wav',
-    {
-      onProcessDataFlushed: (chunk) => {
-        if (chunk)
-          chunks.push(chunk)
-      },
-      onProcessDataEnd: async () => {
-        const totalLength = chunks.reduce((acc, c) => acc + c.length, 0)
-        const result = new Uint8Array(totalLength)
-        let offset = 0
-        for (const chunk of chunks) {
-          result.set(chunk, offset)
-          offset += chunk.length
-        }
-        await Bun.write(outputPath, result)
-      },
-    },
-    {
-      codec: 'mp3',
-      bitrate: '192k',
-    },
-  )
-}
-```
-
-## Pipeline with External Services
-
-Integrate external processing services:
+To avoid paying a provider twice for the same audio:
 
 ```ts
-import { audio, audioInfo } from '@stacksjs/audiox'
+import { MemoryTranscriptCache, transcribeWithCache } from '@ts-audio/core/delivery-workflow'
 
-interface ExternalServiceConfig {
-  apiUrl: string
-  apiKey: string
-}
-
-async function cloudProcessingPipeline(
-  input: string,
-  output: string,
-  serviceConfig: ExternalServiceConfig,
-) {
-  // Stage 1: Prepare audio for cloud service
-  const preparedPath = `/tmp/prepared-${Date.now()}.wav`
-  await audio(input, preparedPath, {
-    codec: 'pcm_s16le',
-    sampleRate: 16000,
-    channels: 1,
-  })
-
-  // Stage 2: Send to cloud service (example)
-  const audioData = await Bun.file(preparedPath).arrayBuffer()
-
-  const response = await fetch(`${serviceConfig.apiUrl}/process`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${serviceConfig.apiKey}`,
-      'Content-Type': 'audio/wav',
-    },
-    body: audioData,
-  })
-
-  if (!response.ok) {
-    throw new Error(`Cloud service error: ${response.status}`)
-  }
-
-  // Stage 3: Process returned audio
-  const processedData = await response.arrayBuffer()
-  const processedPath = `/tmp/cloud-processed-${Date.now()}.wav`
-  await Bun.write(processedPath, processedData)
-
-  // Stage 4: Final encoding
-  await audio(processedPath, output, {
-    codec: 'mp3',
-    bitrate: '192k',
-    metadata: {
-      comment: 'Processed with cloud service',
-    },
-  })
-}
+const { transcript, cacheHit } = await transcribeWithCache(
+  { audio: bytes, language: 'en' },
+  myProvider,
+  new MemoryTranscriptCache(),
+)
 ```
 
-## Pipeline Builder Pattern
-
-Create a fluent API for building pipelines:
-
-```ts
-import { audio } from '@stacksjs/audiox'
-import type { AudioxOptions } from '@stacksjs/audiox'
-
-class AudioPipelineBuilder {
-  private stages: Array<{
-    name: string
-    options: AudioxOptions
-  }> = []
-
-  normalize(sampleRate: number = 44100): this {
-    this.stages.push({
-      name: 'normalize',
-      options: {
-        codec: 'pcm_s16le',
-        sampleRate,
-        channels: 2,
-      },
-    })
-    return this
-  }
-
-  toMono(): this {
-    this.stages.push({
-      name: 'mono',
-      options: {
-        codec: 'pcm_s16le',
-        channels: 1,
-      },
-    })
-    return this
-  }
-
-  resample(sampleRate: number): this {
-    this.stages.push({
-      name: 'resample',
-      options: {
-        codec: 'pcm_s16le',
-        sampleRate,
-      },
-    })
-    return this
-  }
-
-  encodeMP3(bitrate: string = '192k'): this {
-    this.stages.push({
-      name: 'encode-mp3',
-      options: {
-        codec: 'mp3',
-        bitrate,
-      },
-    })
-    return this
-  }
-
-  encodeAAC(bitrate: string = '128k'): this {
-    this.stages.push({
-      name: 'encode-aac',
-      options: {
-        codec: 'aac',
-        bitrate,
-      },
-    })
-    return this
-  }
-
-  withMetadata(metadata: Record<string, string>): this {
-    if (this.stages.length > 0) {
-      const lastStage = this.stages[this.stages.length - 1]
-      lastStage.options.metadata = metadata
-    }
-    return this
-  }
-
-  async run(input: string, output: string): Promise<void> {
-    let currentInput = input
-
-    for (let i = 0; i < this.stages.length; i++) {
-      const stage = this.stages[i]
-      const isLast = i === this.stages.length - 1
-      const stageOutput = isLast
-        ? output
-        : `/tmp/pipeline-${stage.name}-${Date.now()}.wav`
-
-      await audio(currentInput, stageOutput, stage.options)
-      currentInput = stageOutput
-    }
-  }
-}
-
-// Usage
-const pipeline = new AudioPipelineBuilder()
-  .normalize(48000)
-  .toMono()
-  .resample(16000)
-  .encodeMP3('128k')
-  .withMetadata({
-    title: 'Processed Audio',
-    comment: 'Pipeline processed',
-  })
-
-await pipeline.run('input.flac', 'output.mp3')
-```
-
-## Best Practices
-
-1. **Clean Up Intermediate Files**: Always remove temporary files after processing
-2. **Error Handling**: Implement proper error handling at each stage
-3. **Progress Reporting**: Provide feedback on pipeline progress
-4. **Memory Management**: Use streams for large files
-5. **Idempotency**: Design stages to be repeatable without side effects
-6. **Logging**: Log each stage for debugging and monitoring
+The cache key is a SHA-256 of the audio with the provider's name and version, so
+a different provider or a new version misses rather than returning a stale
+result. Supply your own `TranscriptCache` to persist it.

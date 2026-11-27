@@ -1,164 +1,130 @@
-# Get Started
+# Usage
 
-There are two ways of using this audio processing tool: _as a library or as a CLI._
+Two ways in: the library, and the `ts-audio` command.
 
-## Library Usage
+## Library usage
 
-Given the npm package is installed:
+### Decode a file to samples
 
 ```ts
-import { audio, audioInfo } from '@stacksjs/audiox'
+import { decodeAudio } from '@ts-audio/core'
 
-// Basic audio conversion
-await audio('input.mp3', 'output.wav', {
-  codec: 'pcm_s16le',
-  channels: 1,
-  sampleRate: 16000,
-  bitrate: '160k',
-})
+const { sampleRate, channels, duration, codec } = await decodeAudio('voice-note.ogg')
 
-// Get audio file information
-const info = await audioInfo('audio.mp3')
-console.log(info)
-// [
-//   {
-//     codec: 'mp3',
-//     channels: 2,
-//     sampleRate: '44100',
-//     bitrate: '192000',
-//     duration: '180.5',
-//   }
-// ]
+// channels is one Float32Array per channel, each sample between -1 and 1.
+console.log(`${codec} at ${sampleRate} Hz, ${channels.length} channel(s), ${duration}s`)
+```
 
-// Convert with metadata
-await audio('input.mp3', 'output.mp3', {
-  codec: 'mp3',
-  bitrate: '192k',
-  channels: 2,
-  sampleRate: 44100,
-  metadata: {
-    title: 'My Track',
-    artist: 'Artist Name',
-    album: 'Album Name',
-    year: '2024',
-  },
+`decodeAudio` accepts a path, a `Uint8Array`, an `ArrayBuffer`, a `Blob` or a
+`Source`. MP3, Ogg and WAV files are read directly; anything else goes through
+the container readers.
+
+Guard rails, for input you did not create:
+
+```ts
+const decoded = await decodeAudio(upload, {
+  maxBytes: 50 * 1024 * 1024, // refused before reading
+  maxDurationSeconds: 300, // refused as soon as the decoded part is longer
+  signal: controller.signal,
 })
 ```
 
-### Advanced Usage with Streams
+`maxDurationSeconds` throws `AudioTooLongError`; a codec with no decoder throws
+`UnsupportedAudioCodecError`.
+
+### Decode to a WAV for speech-to-text
 
 ```ts
-// Stream processing
-const file = Bun.file('input.mp3')
-const stream = file.stream()
+import { decodeAudioToWav } from '@ts-audio/core'
 
-await audioWithStreamInput(stream, 'output.wav', {
-  codec: 'pcm_s16le',
-  bitrate: '128k',
-  channels: 1,
-  sampleRate: 16000,
-})
-
-// Buffer processing
-const arrayBuffer = await Bun.file('input.mp3').arrayBuffer()
-const wavData = await audioWav(new Uint8Array(arrayBuffer))
-await Bun.write('output.wav', wavData)
+const { audio, mimeType, durationSeconds, sampleRate, channels } = await decodeAudioToWav(
+  'voice-note.ogg',
+  { maxDurationSeconds: 300 },
+)
+// 16 kHz mono 16-bit WAV by default; pass sampleRate and channels to change it.
 ```
 
-### Configuration
-
-You can create a `audiox.config.ts` (or `audiox.config.js`) file in your project root to set default options:
+### Inspect a file
 
 ```ts
-import type { AudioxOptions } from '@stacksjs/audiox'
+import { createInput } from '@ts-audio/core'
 
-const config: AudioxOptions = {
-  codec: 'mp3',
-  bitrate: '192k',
-  channels: 2,
-  sampleRate: 44100,
-  verbose: true,
+const input = createInput('album/01.flac')
+const [format, tracks, metadata, duration] = await Promise.all([
+  input.getFormatName(),
+  input.getTracks(),
+  input.getMetadata(),
+  input.getDuration(),
+])
+await input.close()
+```
+
+### Read packets yourself
+
+```ts
+import { createInput } from '@ts-audio/core'
+
+const input = createInput('song.mp3')
+const track = await input.getPrimaryTrack()
+for await (const packet of input.packets(track!.id)) {
+  // packet.data, packet.timestamp, packet.duration
 }
-
-export default config
+await input.close()
 ```
 
-## CLI Usage
+### Decode a track from your own container
 
-The CLI provides easy access to audio conversion and information features:
+```ts
+import { createAudioDecoder, decodeAudioPackets } from '@ts-audio/core'
 
-### Basic Commands
+// The whole track at once.
+const decoded = await decodeAudioPackets(track, packets, { maxDurationSeconds: 300 })
+
+// Or packet by packet.
+const decoder = await createAudioDecoder(track)
+const chunk = decoder.decode(packet)
+```
+
+Both pick the decoder the same way `decodeAudio` does, so a codec registered
+with `registerAudioDecoder` is used by every path:
+
+```ts
+import { canDecodeAudioCodec, registerAudioDecoder } from '@ts-audio/core'
+
+const unregister = registerAudioDecoder('alac', track => myAlacDecoder(track))
+canDecodeAudioCodec('alac') // true
+unregister()
+```
+
+### Samples without a codec
+
+```ts
+import { decodeWav, encodeWav, mixChannels, resampleAudio } from '@ts-audio/core'
+
+const { channels, sampleRate } = decodeWav(bytes)
+const mono = mixChannels(channels, 1)
+const at16k = resampleAudio(mono, sampleRate, 16000)
+const wav = encodeWav(at16k, 16000)
+```
+
+`resampleAudio` is a Kaiser-windowed sinc with its cutoff below both rates'
+Nyquist frequency, so downsampling does not alias.
+
+## CLI usage
 
 ```bash
-# Convert audio files
-audiox convert input.mp3 output.wav --codec pcm_s16le
-audiox convert podcast.mp3 podcast.aac --codec aac --bitrate 128k
-
-# Get audio information
-audiox info music.mp3
-audiox info podcast.mp3 --metadata title,artist,album
-
-# Show help and version
-audiox --help
-audiox version
+ts-audio info song.flac              # format, duration, tracks
+ts-audio info song.flac --json
+ts-audio metadata song.mp3           # tags and cover art
+ts-audio extract song.ogg --output raw.opus --raw
+ts-audio formats                     # what is read, written, decoded, encoded
+ts-audio convert in.wav out.wav --start 00:00:10 --end 00:00:20
 ```
 
-### Convert Command Options
+See [CLI](./features/cli-usage.md) for each command in full.
 
-```bash
-# Convert to WAV with specific settings
-audiox convert input.mp3 output.wav \
-  --codec pcm_s16le \
-  --channels 1 \
-  --sample-rate 16000 \
-  --bitrate 128k
+## Next
 
-# Convert to MP3 with metadata
-audiox convert input.wav output.mp3 \
-  --codec mp3 \
-  --bitrate 192k \
-  --metadata "title=My Song,artist=Artist Name,year=2024"
-
-# Convert to AAC with high quality
-audiox convert input.mp3 output.aac \
-  --codec aac \
-  --bitrate 256k \
-  --channels 2 \
-  --sample-rate 48000
-```
-
-Available options for conversion:
-
-- `--codec`: Audio codec (aac, mp3, pcm_s16le)
-- `--bitrate`: Audio bitrate (e.g., "192k")
-- `--channels`: Number of channels (1, 2, 5.1, 7.1)
-- `--sample-rate`: Sample rate (8000, 16000, 44100, 48000)
-- `--quality`: Audio quality setting (0-9)
-- `--metadata`: Metadata in format key=value,key2=value2
-- `--verbose`: Enable verbose output
-
-### Info Command
-
-```bash
-# Get basic audio information
-audiox info music.mp3
-
-# Get specific metadata
-audiox info podcast.mp3 --metadata title,artist,album,year
-
-# Get info with verbose output
-audiox info music.mp3 --verbose
-```
-
-## Testing
-
-```bash
-bun test
-```
-
-## Requirements
-
-- Node.js/Bun environment
-- FFmpeg installed on your system
-
-For more detailed information about specific features and options, check out our [configuration guide](./config.md).
+- [Decoding Audio](./features/decoding.md)
+- [Format Support](./features/format-support.md)
+- [Conversion](./features/audio-conversion.md)

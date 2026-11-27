@@ -1,443 +1,77 @@
-# Performance Optimization
+# Performance
 
-Optimizing audiox performance is essential for processing large audio files, handling batch operations, and building responsive applications. This guide covers strategies for maximizing throughput and minimizing resource usage.
+## Codec packages load on demand
 
-## Memory Management
+The format packages are optional peers of core, imported the first time a file
+needs one. Reading a WAV never loads an Opus decoder, and a deployment that only
+handles MP3 never pays for the rest.
 
-### Stream Processing for Large Files
+`canDecodeAudioCodec(codec)` answers from the codec's name without loading
+anything, so you can reject an unsupported upload before touching a decoder.
 
-Use streams to process large files without loading them entirely into memory:
+## Bound what you accept
 
-```ts
-import { audioWithStreamInput, audioWithStreamOut } from '@stacksjs/audiox'
-
-// Process large file with stream input
-async function processLargeFile(inputPath: string, outputPath: string) {
-  const file = Bun.file(inputPath)
-  const stream = file.stream()
-
-  await audioWithStreamInput(stream, outputPath, {
-    codec: 'mp3',
-    bitrate: '192k',
-    channels: 2,
-    sampleRate: 44100,
-  })
-}
-
-// Stream output for memory-efficient processing
-async function streamProcess(inputPath: string, outputPath: string) {
-  const chunks: Uint8Array[] = []
-
-  await audioWithStreamOut(
-    inputPath,
-    {
-      onProcessDataFlushed: (chunk) => {
-        if (chunk) {
-          chunks.push(chunk)
-        }
-      },
-      onProcessDataEnd: async (data) => {
-        if (data) {
-          await Bun.write(outputPath, data)
-        }
-      },
-    },
-    {
-      codec: 'mp3',
-      bitrate: '192k',
-    },
-  )
-}
-```
-
-### Buffer Size Optimization
-
-Control memory usage by processing in appropriately sized chunks:
+Decoding is proportional to the audio's length, and the samples are held in
+memory — a Float32Array per channel. An hour of 48 kHz stereo is about 1.4 GB of
+floats, so for input you did not create, say what you will take:
 
 ```ts
-import { audioWithStreamOut } from '@stacksjs/audiox'
-
-async function processWithChunking(
-  inputPath: string,
-  outputPath: string,
-  chunkSize: number = 1024 * 1024, // 1MB chunks
-) {
-  const outputFile = Bun.file(outputPath)
-  const writer = outputFile.writer()
-
-  await audioWithStreamOut(
-    inputPath,
-    {
-      onProcessDataFlushed: async (chunk) => {
-        if (chunk && chunk.length > 0) {
-          writer.write(chunk)
-          // Flush periodically to manage memory
-          if (chunk.length >= chunkSize) {
-            await writer.flush()
-          }
-        }
-      },
-      onProcessDataEnd: async () => {
-        await writer.end()
-      },
-    },
-    {
-      codec: 'mp3',
-      bitrate: '192k',
-    },
-  )
-}
-```
-
-## Parallel Processing
-
-### Concurrent File Processing
-
-Process multiple files simultaneously:
-
-```ts
-import { audio } from '@stacksjs/audiox'
-import { readdir } from 'node:fs/promises'
-import { join, parse } from 'node:path'
-import { cpus } from 'node:os'
-
-interface ParallelOptions {
-  inputDir: string
-  outputDir: string
-  concurrency?: number
-}
-
-async function parallelProcess(options: ParallelOptions) {
-  const { inputDir, outputDir, concurrency = cpus().length } = options
-
-  const files = await readdir(inputDir)
-  const audioFiles = files.filter(f =>
-    ['.mp3', '.wav', '.flac'].some(ext => f.endsWith(ext)),
-  )
-
-  // Process in batches based on CPU count
-  const results: Array<{ file: string, success: boolean, time: number }> = []
-
-  for (let i = 0; i < audioFiles.length; i += concurrency) {
-    const batch = audioFiles.slice(i, i + concurrency)
-    const batchStart = Date.now()
-
-    const batchResults = await Promise.all(
-      batch.map(async (file) => {
-        const start = Date.now()
-        const inputPath = join(inputDir, file)
-        const outputPath = join(outputDir, `${parse(file).name}.mp3`)
-
-        try {
-          await audio(inputPath, outputPath, {
-            codec: 'mp3',
-            bitrate: '192k',
-          })
-          return { file, success: true, time: Date.now() - start }
-        }
-        catch (error) {
-          return { file, success: false, time: Date.now() - start }
-        }
-      }),
-    )
-
-    results.push(...batchResults)
-    console.log(`Batch completed in ${Date.now() - batchStart}ms`)
-  }
-
-  return results
-}
-```
-
-### Worker Pool Pattern
-
-Implement a worker pool for sustained parallel processing:
-
-```ts
-import { audio } from '@stacksjs/audiox'
-
-interface WorkerTask {
-  input: string
-  output: string
-  options: any
-}
-
-class AudioWorkerPool {
-  private queue: WorkerTask[] = []
-  private activeWorkers = 0
-  private maxWorkers: number
-
-  constructor(maxWorkers: number = 4) {
-    this.maxWorkers = maxWorkers
-  }
-
-  async addTask(task: WorkerTask): Promise<void> {
-    this.queue.push(task)
-    this.processQueue()
-  }
-
-  private async processQueue(): Promise<void> {
-    while (this.queue.length > 0 && this.activeWorkers < this.maxWorkers) {
-      const task = this.queue.shift()
-      if (!task)
-        continue
-
-      this.activeWorkers++
-
-      // Process without awaiting to allow parallel execution
-      this.processTask(task).finally(() => {
-        this.activeWorkers--
-        this.processQueue()
-      })
-    }
-  }
-
-  private async processTask(task: WorkerTask): Promise<void> {
-    await audio(task.input, task.output, task.options)
-  }
-
-  async drain(): Promise<void> {
-    // Wait for all tasks to complete
-    while (this.queue.length > 0 || this.activeWorkers > 0) {
-      await new Promise(resolve => setTimeout(resolve, 100))
-    }
-  }
-}
-
-// Usage
-const pool = new AudioWorkerPool(4)
-
-for (const file of audioFiles) {
-  await pool.addTask({
-    input: file,
-    output: file.replace('.wav', '.mp3'),
-    options: { codec: 'mp3', bitrate: '192k' },
-  })
-}
-
-await pool.drain()
-```
-
-## Codec and Quality Optimization
-
-### Choosing Optimal Codec Settings
-
-Balance quality and performance:
-
-```ts
-import { audio } from '@stacksjs/audiox'
-
-// Fast encoding (lower quality)
-const fastOptions = {
-  codec: 'mp3',
-  bitrate: '128k',
-  quality: 9, // Fastest encoding
-}
-
-// Balanced encoding
-const balancedOptions = {
-  codec: 'mp3',
-  bitrate: '192k',
-  quality: 5,
-}
-
-// High quality encoding (slower)
-const qualityOptions = {
-  codec: 'mp3',
-  bitrate: '320k',
-  quality: 0, // Best quality, slowest
-}
-```
-
-### Sample Rate Optimization
-
-Avoid unnecessary upsampling:
-
-```ts
-import { audio, audioInfo } from '@stacksjs/audiox'
-
-async function optimizedConvert(input: string, output: string) {
-  const info = await audioInfo(input)
-  const sourceSampleRate = Number.parseInt(info[0]?.sampleRate || '44100')
-
-  // Don't upsample - use source rate or lower
-  const targetSampleRate = Math.min(sourceSampleRate, 44100)
-
-  await audio(input, output, {
-    codec: 'mp3',
-    sampleRate: targetSampleRate,
-    bitrate: '192k',
-  })
-}
-```
-
-## Caching Strategies
-
-### Result Caching
-
-Cache processed files to avoid redundant processing:
-
-```ts
-import { audio, audioInfo } from '@stacksjs/audiox'
-import { createHash } from 'node:crypto'
-import { existsSync } from 'node:fs'
-import { readFile } from 'node:fs/promises'
-
-async function getFileHash(path: string): Promise<string> {
-  const content = await readFile(path)
-  return createHash('md5').update(content).digest('hex')
-}
-
-async function cachedProcess(
-  input: string,
-  cacheDir: string,
-  options: any,
-): Promise<string> {
-  const hash = await getFileHash(input)
-  const optionsHash = createHash('md5')
-    .update(JSON.stringify(options))
-    .digest('hex')
-  const cacheKey = `${hash}-${optionsHash}`
-  const cachedPath = `${cacheDir}/${cacheKey}.mp3`
-
-  if (existsSync(cachedPath)) {
-    console.log('Cache hit:', cachedPath)
-    return cachedPath
-  }
-
-  console.log('Cache miss, processing:', input)
-  await audio(input, cachedPath, options)
-  return cachedPath
-}
-```
-
-### Metadata Caching
-
-Cache audio file information:
-
-```ts
-import { audioInfo } from '@stacksjs/audiox'
-
-const infoCache = new Map<string, any>()
-
-async function getCachedInfo(path: string): Promise<any> {
-  if (infoCache.has(path)) {
-    return infoCache.get(path)
-  }
-
-  const info = await audioInfo(path)
-  infoCache.set(path, info)
-  return info
-}
-
-// Clear cache when needed
-function clearInfoCache(): void {
-  infoCache.clear()
-}
-```
-
-## Benchmarking
-
-### Performance Measurement
-
-Measure processing performance:
-
-```ts
-import { audio } from '@stacksjs/audiox'
-
-interface BenchmarkResult {
-  file: string
-  duration: number
-  inputSize: number
-  outputSize: number
-  throughput: number // bytes per second
-}
-
-async function benchmark(
-  input: string,
-  output: string,
-  options: any,
-): Promise<BenchmarkResult> {
-  const inputFile = Bun.file(input)
-  const inputSize = inputFile.size
-
-  const start = performance.now()
-  await audio(input, output, options)
-  const duration = performance.now() - start
-
-  const outputFile = Bun.file(output)
-  const outputSize = outputFile.size
-
-  return {
-    file: input,
-    duration,
-    inputSize,
-    outputSize,
-    throughput: inputSize / (duration / 1000),
-  }
-}
-
-// Usage
-const result = await benchmark('large-file.wav', 'output.mp3', {
-  codec: 'mp3',
-  bitrate: '192k',
+await decodeAudio(upload, {
+  maxBytes: 50 * 1024 * 1024,
+  maxDurationSeconds: 300,
 })
-
-console.log(`
-  Duration: ${result.duration.toFixed(2)}ms
-  Input: ${(result.inputSize / 1024 / 1024).toFixed(2)}MB
-  Output: ${(result.outputSize / 1024 / 1024).toFixed(2)}MB
-  Throughput: ${(result.throughput / 1024 / 1024).toFixed(2)}MB/s
-`)
 ```
 
-## Resource Monitoring
+`maxBytes` is checked before the file is read. `maxDurationSeconds` throws
+`AudioTooLongError` as soon as the decoded part exceeds it, not after decoding
+the rest — so a long file costs only the part decoded before the limit.
 
-### Monitor System Resources
+## Decode in pieces where you can
 
-Track resource usage during processing:
+`decodeAudio` returns the whole file's samples. If you are computing something
+streaming — a waveform, a level meter, a checksum — read packets and decode them
+one at a time instead, and you never hold more than a block:
 
 ```ts
-import { audio } from '@stacksjs/audiox'
-import { cpus, freemem, totalmem } from 'node:os'
-
-function getSystemStats() {
-  const cpuUsage = cpus().map(cpu => ({
-    model: cpu.model,
-    speed: cpu.speed,
-    times: cpu.times,
-  }))
-
-  return {
-    cpuCount: cpus().length,
-    freeMemory: freemem(),
-    totalMemory: totalmem(),
-    memoryUsage: 1 - freemem() / totalmem(),
-  }
-}
-
-async function monitoredProcess(input: string, output: string, options: any) {
-  const beforeStats = getSystemStats()
-  console.log('Before:', beforeStats)
-
-  await audio(input, output, options)
-
-  const afterStats = getSystemStats()
-  console.log('After:', afterStats)
-
-  console.log(`Memory change: ${(
-    (afterStats.memoryUsage - beforeStats.memoryUsage) * 100
-  ).toFixed(2)}%`)
+const decoder = await createAudioDecoder(track)
+for await (const packet of input.packets(track.id)) {
+  const chunk = decoder.decode(packet)
+  if (chunk) accumulate(chunk)
 }
 ```
 
-## Best Practices
+See [Sources and Targets](./stream-processing.md) for the full shape.
 
-1. **Use Streams for Large Files**: Avoid loading entire files into memory
-2. **Optimize Concurrency**: Match parallel workers to CPU cores
-3. **Cache Results**: Avoid reprocessing unchanged files
-4. **Profile First**: Measure before optimizing
-5. **Choose Appropriate Quality**: Higher quality means slower processing
-6. **Avoid Upsampling**: Never increase sample rate unnecessarily
-7. **Clean Up Resources**: Release file handles and clear caches
-8. **Monitor Memory**: Watch for memory leaks in long-running processes
+## What the decoders cost
+
+Rough ordering, slowest first, for the same audio: Vorbis and Opus do the most
+work per sample (both run an inverse MDCT over large blocks, and Opus runs two
+decoders for hybrid frames), AAC is similar but with smaller frames, MP3 less,
+FLAC less again — it is integer-only, with no transform at all — and PCM is a
+copy with a scale.
+
+If you control the format and want decode speed, FLAC is the cheapest lossless
+choice and MP3 the cheapest lossy one.
+
+## Resampling
+
+`resampleAudio` uses a Kaiser-windowed sinc. Where the two rates have a small
+ratio — 44.1 kHz to 16 kHz is 441 to 160 — it builds one filter per output phase
+and each sample is a single dot product. Rates with no small ratio fall back to
+an interpolated filter table, which is slower. Common rate pairs take the fast
+path.
+
+Resampling to 16 kHz mono, as `decodeAudioToWav` does by default, is much
+cheaper than resampling up.
+
+## Reading is cached, not re-fetched
+
+`Reader` caches 64 KB slices, so a demuxer reading a header and then seeking
+does not re-read the file. For a URL source that matters most — it uses a `HEAD`
+request for the size and ranged reads for the rest.
+
+## Avoid conversion for transformations
+
+`Conversion` copies packets; it cannot resample, change channels or re-encode,
+and it refuses rather than trying. There is no performance decision to make
+here, only a correctness one — see [Conversion](../features/audio-conversion.md).

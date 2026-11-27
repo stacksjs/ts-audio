@@ -1,109 +1,27 @@
 # Features
 
-## Audio Conversion & Optimization
+## [Decoding Audio](./decoding.md)
 
-AudioX provides powerful audio processing capabilities through a simple, intuitive interface.
+Five codecs decoded to samples in TypeScript — MP3, AAC, Opus, FLAC and Vorbis
+— plus PCM. `decodeAudio` for a whole file, `decodeAudioToWav` for the 16 kHz
+mono WAV speech-to-text wants, and `decodeAudioPackets` for a track you read
+yourself.
 
-### Format Conversion
+## [Format Support](./format-support.md)
 
-- Convert between various audio formats:
-  - WAV
-  - MP3
-  - AAC
-  - And more custom formats
-- Maintain audio quality during conversion
-- Batch processing support
+Which containers are read and written, which codecs are decoded, and what is
+refused by name rather than guessed at.
 
-### Audio Optimization
+## [Conversion](./audio-conversion.md)
 
-- Customize audio parameters:
-  - Bitrate control (e.g., "128k", "192k", "320k")
-  - Sample rate adjustment (8000Hz - 48000Hz)
-  - Channel configuration (mono, stereo, 5.1, 7.1)
-- Quality settings for different use cases
-- Size optimization while maintaining quality
+Copying packets between containers, trimming by time, and what `Conversion`
+refuses because it would need an encoder.
 
-### Stream Processing
+## [Metadata](./metadata-handling.md)
 
-- Handle audio streams efficiently:
-  - Input stream processing
-  - Output stream generation
-  - Buffer-based operations
-- Memory-efficient processing for large files
-- Real-time audio manipulation
+ID3v1 and ID3v2, Vorbis comments, FLAC pictures, and the common shape they are
+all read into.
 
-### Metadata Management
+## [CLI](./cli-usage.md)
 
-- Comprehensive metadata handling:
-  - Read and write ID3 tags
-  - Custom metadata fields
-  - Batch metadata operations
-- Preserve important audio information
-- Add or modify audio file details
-
-### Developer Tools
-
-- TypeScript Integration:
-  - Full type safety
-  - Intelligent code completion
-  - Interface definitions
-- Error Handling:
-  - Detailed error messages
-  - Error recovery options
-  - Custom error callbacks
-- Configuration:
-  - Global settings
-  - Per-operation overrides
-  - Environment-specific configs
-
-### CLI Capabilities
-
-- Command-line interface for quick operations
-- Batch processing support
-- Interactive mode for complex operations
-- Script integration capabilities
-
-## Integration Options
-
-### As a Library
-
-```typescript
-import { audio } from '@stacksjs/audiox'
-
-// Basic conversion
-await audio('input.mp3', 'output.wav', {
-  codec: 'pcm_s16le',
-  channels: 1,
-  sampleRate: 16000,
-})
-
-// Stream processing
-await audioWithStreamInput(inputStream, 'output.mp3', {
-  codec: 'mp3',
-  bitrate: '192k',
-})
-```
-
-### As a CLI Tool
-
-```bash
-# Basic conversion
-audiox convert input.mp3 output.wav --codec pcm_s16le
-
-# Advanced options
-audiox convert input.mp3 output.mp3 --bitrate 192k --channels 2
-```
-
-## Performance Features
-
-- Optimized for speed and efficiency
-- Minimal memory footprint
-- Parallel processing capabilities
-- Progress tracking and reporting
-
-## Extensibility
-
-- Plugin system for custom processors
-- Custom codec support
-- Middleware integration
-- Event hooks for processing steps
+`ts-audio info`, `metadata`, `extract`, `formats` and `convert`.

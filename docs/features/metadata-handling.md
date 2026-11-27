@@ -1,301 +1,90 @@
-# Metadata Handling
+# Metadata
 
-Audiox provides comprehensive metadata handling capabilities, allowing you to read, write, and modify audio file metadata including ID3 tags, artist information, album art references, and more.
+Every container's tags are read into one shape, so the same code works whatever
+the file is.
 
-## Reading Metadata
-
-### Basic Metadata Retrieval
-
-Get audio file information including basic metadata:
+## Reading
 
 ```ts
-import { audioInfo } from '@stacksjs/audiox'
+import { createInput } from '@ts-audio/core'
 
-const info = await audioInfo('music.mp3')
-console.log(info)
-// [
-//   {
-//     codec: 'mp3',
-//     channels: 2,
-//     sampleRate: '44100',
-//     bitrate: '192000',
-//     duration: '180.5',
-//   }
-// ]
+const input = createInput('song.mp3')
+const metadata = await input.getMetadata()
+await input.close()
+
+console.log(metadata.title, metadata.artist, metadata.album, metadata.year)
 ```
 
-### Extended Metadata
-
-Request specific metadata tags:
-
-```ts
-import { audioInfo } from '@stacksjs/audiox'
-
-const info = await audioInfo('music.mp3', {
-  metadataTags: ['title', 'artist', 'album', 'track', 'genre', 'year'],
-})
-
-console.log(info)
-// [
-//   {
-//     codec: 'mp3',
-//     channels: 2,
-//     sampleRate: '44100',
-//     bitrate: '192000',
-//     duration: '180.5',
-//     metadata: {
-//       title: 'Song Title',
-//       artist: 'Artist Name',
-//       album: 'Album Name',
-//       track: '1',
-//       genre: 'Pop',
-//       year: '2024'
-//     }
-//   }
-// ]
-```
-
-### CLI Metadata Reading
+Or from the CLI:
 
 ```bash
-# Get basic info
-audiox info music.mp3
-
-# Get specific metadata fields
-audiox info music.mp3 --metadata title,artist,album,year
-
-# Verbose output with all available metadata
-audiox info music.mp3 --verbose
+ts-audio metadata song.mp3
+ts-audio metadata album.flac --json
 ```
 
-## Writing Metadata
+## The shape
 
-### Embedding Metadata During Conversion
-
-Add metadata when converting audio files:
+`AudioMetadata` covers the fields the formats agree on:
 
 ```ts
-import { audio } from '@stacksjs/audiox'
-
-await audio('input.wav', 'output.mp3', {
-  codec: 'mp3',
-  bitrate: '320k',
-  metadata: {
-    title: 'My Song',
-    artist: 'Artist Name',
-    album: 'Album Title',
-    year: '2024',
-    track: '1',
-    genre: 'Electronic',
-  },
-})
-```
-
-### CLI Metadata Writing
-
-```bash
-# Add metadata during conversion
-audiox convert input.wav output.mp3 \
-  --codec mp3 \
-  --bitrate 320k \
-  --metadata "title=My Song" \
-  --metadata "artist=Artist Name" \
-  --metadata "album=Album Title" \
-  --metadata "year=2024"
-
-# Alternative format
-audiox convert input.wav output.mp3 \
-  --codec mp3 \
-  --metadata title="My Song",artist="Artist Name",year=2024
-```
-
-## Common Metadata Fields
-
-### Standard Tags
-
-| Field | Description | Example |
-|-------|-------------|---------|
-| `title` | Track title | "Bohemian Rhapsody" |
-| `artist` | Performing artist | "Queen" |
-| `album` | Album name | "A Night at the Opera" |
-| `album_artist` | Album artist | "Queen" |
-| `year` | Release year | "1975" |
-| `track` | Track number | "11" |
-| `disc` | Disc number | "1" |
-| `genre` | Music genre | "Rock" |
-| `composer` | Composer | "Freddie Mercury" |
-| `comment` | Additional comments | "Remastered 2011" |
-
-### Extended Tags
-
-```ts
-await audio('input.wav', 'output.mp3', {
-  codec: 'mp3',
-  metadata: {
-    title: 'Track Title',
-    artist: 'Artist Name',
-    album: 'Album Name',
-    album_artist: 'Album Artist',
-    year: '2024',
-    track: '5',
-    disc: '1',
-    genre: 'Electronic',
-    composer: 'Composer Name',
-    publisher: 'Record Label',
-    copyright: '2024 Record Label',
-    comment: 'Encoded with audiox',
-    encoded_by: 'audiox',
-  },
-})
-```
-
-## Batch Metadata Operations
-
-### Apply Consistent Metadata to Multiple Files
-
-```ts
-import { audio } from '@stacksjs/audiox'
-import { readdir } from 'node:fs/promises'
-import { join, parse } from 'node:path'
-
-async function tagAlbum(
-  inputDir: string,
-  outputDir: string,
-  albumInfo: {
-    artist: string
-    album: string
-    year: string
-    genre: string
-  },
-) {
-  const files = await readdir(inputDir)
-  const audioFiles = files.filter(f => f.endsWith('.mp3')).sort()
-
-  for (let i = 0; i < audioFiles.length; i++) {
-    const file = audioFiles[i]
-    const inputPath = join(inputDir, file)
-    const outputPath = join(outputDir, file)
-
-    // Use filename as track title
-    const trackTitle = parse(file).name
-      .replace(/^\d+[-_.\s]*/, '') // Remove leading track numbers
-      .replace(/[-_]/g, ' ') // Replace separators with spaces
-      .trim()
-
-    await audio(inputPath, outputPath, {
-      codec: 'mp3',
-      bitrate: '320k',
-      metadata: {
-        ...albumInfo,
-        title: trackTitle,
-        track: String(i + 1),
-      },
-    })
-
-    console.log(`Tagged: ${file}`)
+interface AudioMetadata {
+  title?: string
+  artist?: string
+  album?: string
+  albumArtist?: string
+  composer?: string
+  genre?: string
+  year?: number
+  trackNumber?: number
+  trackTotal?: number
+  discNumber?: number
+  discTotal?: number
+  comment?: string
+  lyrics?: string
+  copyright?: string
+  encodedBy?: string
+  encoder?: string
+  date?: string
+  isrc?: string
+  bpm?: number
+  replayGain?: {
+    trackGain?: number
+    trackPeak?: number
+    albumGain?: number
+    albumPeak?: number
   }
+  coverArt?: { data: Uint8Array, mimeType: string, description?: string }[]
+  custom?: Record<string, string>
 }
-
-await tagAlbum('./raw-tracks', './tagged-album', {
-  artist: 'The Band',
-  album: 'Greatest Hits',
-  year: '2024',
-  genre: 'Rock',
-})
 ```
 
-### Reading Metadata from Multiple Files
+Anything a format carries that does not map onto a named field lands in
+`custom`.
+
+## Where it comes from
+
+| Container | Source |
+| --- | --- |
+| MP3 | ID3v2 frames, falling back to ID3v1 |
+| FLAC | Vorbis comments, plus PICTURE blocks for cover art |
+| Ogg | Vorbis comments from the comment header |
+| WAV | the `LIST`/`INFO` chunk, where present |
+
+The lower-level pieces are exported too, if you want the raw tags:
+`parseVorbisComment` and `vorbisCommentToMetadata` from `@ts-audio/flac` and
+`@ts-audio/ogg`, `parsePicture` from `@ts-audio/flac`, and the ID3 types from
+`@ts-audio/mp3`.
+
+## Cover art
 
 ```ts
-import { audioInfo } from '@stacksjs/audiox'
-import { readdir } from 'node:fs/promises'
-import { join } from 'node:path'
-
-async function scanLibrary(directory: string) {
-  const files = await readdir(directory)
-  const audioFiles = files.filter(f =>
-    ['.mp3', '.flac', '.m4a'].some(ext => f.endsWith(ext)),
-  )
-
-  const library = []
-
-  for (const file of audioFiles) {
-    const filePath = join(directory, file)
-    const info = await audioInfo(filePath, {
-      metadataTags: ['title', 'artist', 'album', 'year', 'genre'],
-    })
-
-    library.push({
-      file,
-      ...info[0],
-    })
-  }
-
-  return library
-}
-
-const tracks = await scanLibrary('./music')
-console.table(tracks.map(t => ({
-  File: t.file,
-  Title: t.metadata?.title,
-  Artist: t.metadata?.artist,
-  Album: t.metadata?.album,
-})))
+const [picture] = metadata.coverArt ?? []
+if (picture)
+  await Bun.write(`cover.${picture.mimeType.split('/')[1]}`, picture.data)
 ```
 
-## Metadata Preservation
+## Writing
 
-### Preserving Metadata During Conversion
-
-When converting between formats, preserve existing metadata:
-
-```ts
-import { audio, audioInfo } from '@stacksjs/audiox'
-
-async function convertWithMetadata(input: string, output: string) {
-  // Read existing metadata
-  const info = await audioInfo(input, {
-    metadataTags: ['title', 'artist', 'album', 'year', 'track', 'genre'],
-  })
-
-  const existingMetadata = info[0]?.metadata || {}
-
-  // Convert with preserved metadata
-  await audio(input, output, {
-    codec: 'mp3',
-    bitrate: '320k',
-    metadata: existingMetadata,
-  })
-}
-
-await convertWithMetadata('original.flac', 'converted.mp3')
-```
-
-## Configuration Default Metadata
-
-Set default metadata in your configuration file:
-
-```ts
-// audiox.config.ts
-import type { AudioxOptions } from '@stacksjs/audiox'
-
-const config: AudioxOptions = {
-  codec: 'mp3',
-  bitrate: '192k',
-  metadata: {
-    encoded_by: 'My Studio',
-    copyright: '2024 My Label',
-  },
-}
-
-export default config
-```
-
-## Best Practices
-
-1. **Consistent Formatting**: Use consistent formatting for metadata fields across your library
-2. **Character Encoding**: Ensure proper UTF-8 encoding for international characters
-3. **Backup Original Files**: Keep backups before batch metadata operations
-4. **Validate Metadata**: Verify metadata was written correctly after conversion
-5. **Use Standard Fields**: Stick to standard metadata fields for better compatibility
-6. **Handle Missing Data**: Gracefully handle files with missing or incomplete metadata
+`Output.setMetadata(metadata)` hands metadata to the muxer, and `Conversion`
+carries the input's metadata across by default. How much of it survives depends
+on the container: FLAC and Ogg take Vorbis comments, MP3 takes ID3.

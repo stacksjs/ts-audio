@@ -1,153 +1,101 @@
-# Advanced Stream Processing
+# Sources and Targets
 
-## Understanding Audio Streams
+Everything that reads audio takes a `Source`, and everything that writes takes a
+`Target`. Both are plain descriptors, so you can hand ts-audio a buffer, a path,
+a URL or a stream without it caring which.
 
-AudioX provides powerful stream processing capabilities for handling audio data efficiently. This guide covers advanced stream processing techniques and best practices.
+## Sources
 
-## Stream Types
+```ts
+import { bufferSource, createSource, fileSource, streamSource, urlSource } from '@ts-audio/core'
 
-### Input Streams
-
-```typescript
-import { audioWithStreamInput } from '@stacksjs/audiox'
-
-// Process from input stream
-const inputStream: ReadableStream<Uint8Array> = getAudioStream()
-await audioWithStreamInput(inputStream, 'output.mp3', {
-  codec: 'mp3',
-  bitrate: '192k',
-})
+createSource(bytes) // a Uint8Array or ArrayBuffer
+createSource('song.mp3') // a path
+createSource('https://example.com/song.mp3') // a URL
+streamSource(readable) // a ReadableStream<Uint8Array>
 ```
 
-### Output Streams
+`createSource` picks for you: a string beginning `http://` or `https://` becomes
+a URL source, any other string a file source. The explicit constructors are
+there when you want to be sure.
 
-```typescript
-import { audioWithStreamOut } from '@stacksjs/audiox'
+### What a source can tell you
 
-// Process to output stream
-await audioWithStreamOut('input.mp3', {
-  onProcessDataFlushed: (data) => {
-    // Handle intermediate data chunks
-  },
-  onProcessDataEnd: (finalData) => {
-    // Handle final processed data
-  }
-})
+```ts
+import { getSourceSize, readSourceBuffer, supportsSeek } from '@ts-audio/core'
+
+await getSourceSize(source) // bytes, or null when unknown
+supportsSeek(source) // false for streams
+await readSourceBuffer(source) // the whole thing
 ```
 
-### Bidirectional Streaming
+A stream cannot be seeked or sized, which matters for the formats that need to
+look ahead. Where a reader needs to seek, give it a buffer, file or URL source.
 
-```typescript
-import { audioWithStreamInputAndOut } from '@stacksjs/audiox'
+## Targets
 
-// Process between streams
-await audioWithStreamInputAndOut(inputStream, {
-  onProcessDataEnd: (data) => {
-    // Handle processed output
-  }
-})
+```ts
+import { bufferTarget, createTarget, fileTarget, streamTarget, writeToTarget } from '@ts-audio/core'
+
+const target = bufferTarget() // collect in memory
+await writeToTarget(fileTarget('out.wav'), bytes)
 ```
 
-## Memory Management
+## The reader underneath
 
-### Chunked Processing
+`Reader` is what the demuxers use: it caches slices, so reading a header and
+then seeking does not re-fetch the file.
 
-- Process large files in chunks to maintain memory efficiency
-- Handle backpressure automatically
-- Implement proper cleanup
+```ts
+import { Reader } from '@ts-audio/core'
 
-### Buffer Management
+const reader = Reader.fromFile('song.flac')
+await reader.init()
+const header = await reader.readBytes(4)
+reader.position = 0
+await reader.close()
+```
 
-- Use appropriate buffer sizes
-- Implement proper buffer pooling
-- Handle buffer overflow scenarios
+`Reader.fromBuffer`, `.fromFile` and `.fromUrl` are the shortcuts. For a URL
+source it uses a `HEAD` request for the size.
 
-## Error Handling
+## Bit-level reading and writing
 
-### Stream Errors
+The formats are built on these, and they are exported in case you need them:
 
-```typescript
-try {
-  await audioWithStreamInput(inputStream, 'output.mp3', {
-    onError: (error) => {
-      // Handle stream-specific errors
-      console.error('Stream processing error:', error)
-    }
-  })
+```ts
+import { BitReader, BitWriter, crc16, crc32, crc8 } from '@ts-audio/core'
+
+const bits = new BitReader(bytes)
+bits.readBits(14) // most significant first
+```
+
+FLAC's CRCs are `crc8Flac` and `crc16Flac`; MP3's is `crc16Mp3`.
+
+Note that bit order differs by format: most read most-significant-first, while
+Vorbis reads least-significant-first and has its own reader in
+`@ts-audio/vorbis`.
+
+## Streaming decode
+
+`decodeAudio` buffers what it needs — for MP3, Ogg and WAV it reads the file
+whole, up to 256 MB. For a long file where you want samples as they arrive, read
+packets and decode them yourself:
+
+```ts
+import { createAudioDecoder, createInput } from '@ts-audio/core'
+
+const input = createInput('long.flac')
+const track = (await input.getPrimaryTrack())!
+const decoder = await createAudioDecoder(track)
+for await (const packet of input.packets(track.id)) {
+  const chunk = decoder.decode(packet)
+  if (chunk)
+    handle(chunk.channels, chunk.sampleRate)
 }
-catch (error) {
-  // Handle general errors
-}
+decoder.flush?.()
+decoder.close?.()
+await input.close()
 ```
 
-### Recovery Strategies
-
-- Implement retry logic
-- Handle interrupted streams
-- Clean up resources properly
-
-## Performance Optimization
-
-### Parallel Processing
-
-- Process multiple chunks simultaneously
-- Balance CPU usage
-- Monitor memory consumption
-
-### Caching Strategies
-
-- Implement smart caching
-- Handle temporary storage
-- Clean up cached data
-
-## Best Practices
-
-### Resource Management
-
-1. Always close streams when done
-2. Implement proper error boundaries
-3. Monitor memory usage
-4. Clean up temporary files
-
-### Configuration
-
-1. Set appropriate buffer sizes
-2. Configure proper timeouts
-3. Implement retry policies
-4. Monitor stream health
-
-## Advanced Use Cases
-
-### Real-time Processing
-
-```typescript
-// Real-time audio processing
-async function processInRealTime(stream: ReadableStream<Uint8Array>) {
-  await audioWithStreamInputAndOut(stream, {
-    onProcessDataFlushed: (chunk) => {
-      // Process chunks as they arrive
-      handleRealTimeAudio(chunk)
-    },
-    onProcessDataEnd: () => {
-      // Cleanup after processing
-    }
-  })
-}
-```
-
-### Custom Stream Transformations
-
-```typescript
-// Implement custom transformations
-async function customTransform(inputStream: ReadableStream<Uint8Array>) {
-  return audioWithStreamInputAndOut(inputStream, {
-    codec: 'pcm_s16le',
-    sampleRate: 16000,
-    channels: 1,
-    onProcessDataEnd: (data) => {
-      // Apply custom transformations
-      return transformAudioData(data)
-    }
-  })
-}
-```
+See [Decoding Audio](../features/decoding.md).

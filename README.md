@@ -110,10 +110,17 @@ Being clear about the edges, since they are easy to hit:
 
 - **Decoding is the strong suit.** MP3, AAC, Opus, FLAC, Vorbis and PCM all
   decode to samples, verified against reference decoders.
-- **Encoding is not implemented** beyond PCM/WAV. The muxers package up
-  packets; they do not compress. So `convert` can trim, copy and change
-  container, but it **cannot change codec** — asking it to currently writes a
-  file you cannot play rather than refusing, which is a bug being fixed.
+- **There are no encoders here** beyond PCM/WAV. The muxers package up packets;
+  they do not compress. `Conversion` refuses anything needing an encoder — a
+  codec change, resampling, a channel or bitrate change, normalisation, fades —
+  with an error naming what it cannot do, rather than writing a file that is
+  wrong. Where the runtime provides WebCodecs, `transcodeAudioWithWebCodecs`
+  uses the platform's own encoder; browsers have it and Bun does not.
+- **One gap in that guard:** it compares codecs, not containers. Converting a
+  WAV to `out.mp3` without naming a codec passes it — the codec has not changed,
+  only the container — and writes PCM into an MP3 container, reporting success.
+  Keep the container and codec consistent until `OutputFormat` declares what it
+  can carry.
 - **No MP4, MOV, WebM or Matroska.** Those are containers, and they live in
   [ts-videos][ts-videos]; feed their packets here.
 - **Refused rather than guessed at:** ALAC (no decoder), 32-bit FLAC, Vorbis
@@ -135,6 +142,10 @@ rather than against itself:
 The fixtures are built by `say`, `afconvert`, `lame`, the reference FLAC encoder
 and libvorbis — never ffmpeg. Each package's `test/fixtures/` holds the script
 that rebuilds them.
+
+## Documentation
+
+Full documentation is at [ts-audio.stacksjs.org][docs-site], or in [`docs/`][docs-dir].
 
 ## Testing
 
@@ -188,6 +199,8 @@ The MIT License (MIT). Please see [LICENSE][license] for more information.
 
 Made with 💙
 
+[docs-site]: https://ts-audio.stacksjs.org
+[docs-dir]: ./docs
 [pkg-core]: ./packages/ts-audio
 [pkg-mp3]: ./packages/mp3
 [pkg-aac]: ./packages/aac
