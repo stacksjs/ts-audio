@@ -195,7 +195,6 @@ export class FlacDemuxer extends Demuxer {
   private frames: FlacFrame[] = []
   private audioDataStart = 0
   private currentFrameIndex = 0
-  private _initialized = false
 
   get formatName(): string {
     return 'flac'
@@ -206,82 +205,82 @@ export class FlacDemuxer extends Demuxer {
   }
 
   async init(): Promise<void> {
-    if (this._initialized) return
-    this._initialized = true
+    return this.initOnce(async () => {
 
-    this.reader.position = 0
+      this.reader.position = 0
 
-    // Read FLAC magic
-    const magic = await this.reader.readU32BE()
-    if (magic !== FLAC_MAGIC) {
-      throw new Error('Invalid FLAC file: missing fLaC header')
-    }
-
-    // Parse metadata blocks
-    let isLast = false
-    while (!isLast) {
-      const header = await this.reader.readU8()
-      if (header === null) break
-
-      isLast = (header & 0x80) !== 0
-      const blockType = header & 0x7F
-      const length = await this.reader.readU24BE()
-      if (length === null) break
-
-      const offset = this.reader.position
-      const data = await this.reader.readBytes(length)
-      if (!data) break
-
-      const block: MetadataBlock = {
-        type: blockType,
-        isLast,
-        length,
-        data,
-        offset,
+      // Read FLAC magic
+      const magic = await this.reader.readU32BE()
+      if (magic !== FLAC_MAGIC) {
+        throw new Error('Invalid FLAC file: missing fLaC header')
       }
 
-      this.processMetadataBlock(block)
-    }
+      // Parse metadata blocks
+      let isLast = false
+      while (!isLast) {
+        const header = await this.reader.readU8()
+        if (header === null) break
 
-    this.audioDataStart = this.reader.position
+        isLast = (header & 0x80) !== 0
+        const blockType = header & 0x7F
+        const length = await this.reader.readU24BE()
+        if (length === null) break
 
-    if (!this.streamInfo) {
-      throw new Error('Invalid FLAC file: missing STREAMINFO block')
-    }
+        const offset = this.reader.position
+        const data = await this.reader.readBytes(length)
+        if (!data) break
 
-    // Scan frames
-    await this.scanFrames()
+        const block: MetadataBlock = {
+          type: blockType,
+          isLast,
+          length,
+          data,
+          offset,
+        }
 
-    // Build track
-    const track: AudioTrack = {
-      type: 'audio',
-      id: 1,
-      index: 0,
-      codec: 'flac',
-      sampleRate: this.streamInfo.sampleRate,
-      channels: this.streamInfo.channels,
-      bitDepth: this.streamInfo.bitsPerSample,
-      // A FLAC decoder is configured from STREAMINFO, so hand it over as the
-      // track's description, as Matroska and MP4 do for their FLAC tracks.
-      codecDescription: this.streamInfoBlock ?? undefined,
-      isDefault: true,
-    }
+        this.processMetadataBlock(block)
+      }
 
-    this._tracks = [track]
-    this._duration = Number(this.streamInfo.totalSamples) / this.streamInfo.sampleRate
+      this.audioDataStart = this.reader.position
 
-    // Build metadata
-    const metadata = this.vorbisComment ? vorbisCommentToMetadata(this.vorbisComment) : {}
+      if (!this.streamInfo) {
+        throw new Error('Invalid FLAC file: missing STREAMINFO block')
+      }
 
-    if (this.pictures.length > 0) {
-      metadata.coverArt = this.pictures.map(pic => ({
-        data: pic.data,
-        mimeType: pic.mimeType,
-        description: pic.description || PICTURE_TYPES[pic.type] || 'Unknown',
-      }))
-    }
+      // Scan frames
+      await this.scanFrames()
 
-    this._metadata = metadata
+      // Build track
+      const track: AudioTrack = {
+        type: 'audio',
+        id: 1,
+        index: 0,
+        codec: 'flac',
+        sampleRate: this.streamInfo.sampleRate,
+        channels: this.streamInfo.channels,
+        bitDepth: this.streamInfo.bitsPerSample,
+        // A FLAC decoder is configured from STREAMINFO, so hand it over as the
+        // track's description, as Matroska and MP4 do for their FLAC tracks.
+        codecDescription: this.streamInfoBlock ?? undefined,
+        isDefault: true,
+      }
+
+      this._tracks = [track]
+      this._duration = Number(this.streamInfo.totalSamples) / this.streamInfo.sampleRate
+
+      // Build metadata
+      const metadata = this.vorbisComment ? vorbisCommentToMetadata(this.vorbisComment) : {}
+
+      if (this.pictures.length > 0) {
+        metadata.coverArt = this.pictures.map(pic => ({
+          data: pic.data,
+          mimeType: pic.mimeType,
+          description: pic.description || PICTURE_TYPES[pic.type] || 'Unknown',
+        }))
+      }
+
+      this._metadata = metadata
+    })
   }
 
   private processMetadataBlock(block: MetadataBlock): void {

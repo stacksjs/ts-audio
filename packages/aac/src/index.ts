@@ -145,7 +145,6 @@ export class AacDemuxer extends Demuxer {
   private sampleRate = 44100
   private channels = 2
   private profile: AacProfile = 'AAC-LC'
-  private _initialized = false
 
   get formatName(): string {
     return 'aac'
@@ -156,37 +155,37 @@ export class AacDemuxer extends Demuxer {
   }
 
   async init(): Promise<void> {
-    if (this._initialized) return
-    this._initialized = true
+    return this.initOnce(async () => {
 
-    await this.scanFrames()
+      await this.scanFrames()
 
-    if (this.frames.length > 0) {
-      const firstFrame = this.frames[0]
-      const lastFrame = this.frames[this.frames.length - 1]
+      if (this.frames.length > 0) {
+        const firstFrame = this.frames[0]
+        const lastFrame = this.frames[this.frames.length - 1]
 
-      this.sampleRate = AAC_SAMPLE_RATES[firstFrame.header.samplingFrequencyIndex] ?? 44100
-      this.channels = firstFrame.header.channelConfiguration || 2
-      this.profile = AAC_PROFILES[firstFrame.header.profile] ?? 'AAC-LC'
+        this.sampleRate = AAC_SAMPLE_RATES[firstFrame.header.samplingFrequencyIndex] ?? 44100
+        this.channels = firstFrame.header.channelConfiguration || 2
+        this.profile = AAC_PROFILES[firstFrame.header.profile] ?? 'AAC-LC'
 
-      const track: AudioTrack = {
-        type: 'audio',
-        id: 1,
-        index: 0,
-        codec: 'aac',
-        sampleRate: this.sampleRate,
-        channels: this.channels,
-        isDefault: true,
+        const track: AudioTrack = {
+          type: 'audio',
+          id: 1,
+          index: 0,
+          codec: 'aac',
+          sampleRate: this.sampleRate,
+          channels: this.channels,
+          isDefault: true,
+        }
+
+        this._tracks = [track]
+
+        // AAC uses 1024 samples per frame
+        const samplesPerFrame = 1024
+        this._duration = lastFrame.timestamp + (samplesPerFrame / this.sampleRate)
       }
 
-      this._tracks = [track]
-
-      // AAC uses 1024 samples per frame
-      const samplesPerFrame = 1024
-      this._duration = lastFrame.timestamp + (samplesPerFrame / this.sampleRate)
-    }
-
-    this._metadata = {}
+      this._metadata = {}
+    })
   }
 
   private async scanFrames(): Promise<void> {

@@ -271,7 +271,6 @@ export class OggDemuxer extends Demuxer {
   private pages: OggPage[] = []
   private primaryStream: OggStream | null = null
   private currentPacketIndex = 0
-  private _initialized = false
 
   get formatName(): string {
     return 'ogg'
@@ -284,12 +283,12 @@ export class OggDemuxer extends Demuxer {
   }
 
   async init(): Promise<void> {
-    if (this._initialized) return
-    this._initialized = true
+    return this.initOnce(async () => {
 
-    await this.scanPages()
-    await this.buildStreams()
-    await this.buildTrack()
+      await this.scanPages()
+      await this.buildStreams()
+      await this.buildTrack()
+    })
   }
 
   private async scanPages(): Promise<void> {

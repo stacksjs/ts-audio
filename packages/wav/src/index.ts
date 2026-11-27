@@ -97,7 +97,6 @@ export class WavDemuxer extends Demuxer {
   private bytesPerSample = 0
   private samplesRead = 0
   private totalSamples = 0
-  private _initialized = false
 
   get formatName(): string {
     return this.isRf64 ? 'rf64' : 'wav'
@@ -108,137 +107,137 @@ export class WavDemuxer extends Demuxer {
   }
 
   async init(): Promise<void> {
-    if (this._initialized) return
-    this._initialized = true
+    return this.initOnce(async () => {
 
-    this.reader.position = 0
+      this.reader.position = 0
 
-    // Read RIFF/RF64 header
-    const riffMagic = await this.reader.readU32BE()
-    if (riffMagic === RF64_MAGIC) {
-      this.isRf64 = true
-    }
-    else if (riffMagic !== RIFF_MAGIC) {
-      throw new Error('Invalid WAV file: missing RIFF/RF64 header')
-    }
-
-    let fileSize = await this.reader.readU32LE()
-    const waveMagic = await this.reader.readU32BE()
-
-    if (waveMagic !== WAVE_MAGIC) {
-      throw new Error('Invalid WAV file: missing WAVE identifier')
-    }
-
-    // Parse chunks - first pass to find ds64 if RF64
-    const metadata: AudioMetadata = {}
-    let infoChunk: { [key: string]: string } = {}
-
-    // For RF64, we need to read ds64 first to get actual sizes
-    if (this.isRf64) {
-      // ds64 must be the first chunk after WAVE
-      const ds64Id = await this.reader.readU32BE()
-      const ds64Size = await this.reader.readU32LE()
-
-      if (ds64Id === DS64_MAGIC && ds64Size !== null) {
-        await this.parseDs64Chunk(ds64Size)
-        fileSize = Number(this.ds64!.riffSize & 0xFFFFFFFFn)
+      // Read RIFF/RF64 header
+      const riffMagic = await this.reader.readU32BE()
+      if (riffMagic === RF64_MAGIC) {
+        this.isRf64 = true
       }
-      else {
-        throw new Error('Invalid RF64 file: ds64 chunk must be first')
-      }
-    }
-
-    // Continue parsing remaining chunks
-    const endPosition = this.isRf64 && this.ds64
-      ? Number(this.ds64.riffSize) + 8
-      : 8 + fileSize!
-
-    while (this.reader.position < endPosition) {
-      const chunkId = await this.reader.readU32BE()
-      let chunkSize = await this.reader.readU32LE()
-
-      if (chunkId === null || chunkSize === null) break
-
-      // For RF64, check if size is placeholder
-      if (this.isRf64 && this.ds64 && chunkSize === RF64_SIZE_PLACEHOLDER) {
-        if (chunkId === DATA_MAGIC) {
-          chunkSize = Number(this.ds64.dataSize)
-        }
+      else if (riffMagic !== RIFF_MAGIC) {
+        throw new Error('Invalid WAV file: missing RIFF/RF64 header')
       }
 
-      const chunkOffset = this.reader.position
+      let fileSize = await this.reader.readU32LE()
+      const waveMagic = await this.reader.readU32BE()
 
-      if (chunkId === FMT_MAGIC) {
-        await this.parseFmtChunk(chunkSize)
-      }
-      else if (chunkId === DATA_MAGIC) {
-        const actualSize = this.isRf64 && this.ds64 && chunkSize === RF64_SIZE_PLACEHOLDER
-          ? Number(this.ds64.dataSize)
-          : chunkSize
-        this.dataChunk = { id: chunkId, size: actualSize, offset: chunkOffset }
-      }
-      else if (chunkId === DS64_MAGIC) {
-        // Already parsed above for RF64
-      }
-      else if (chunkId === LIST_MAGIC) {
-        const listType = await this.reader.readU32BE()
-        if (listType === INFO_MAGIC) {
-          infoChunk = await this.parseInfoChunk(chunkSize - 4)
-        }
+      if (waveMagic !== WAVE_MAGIC) {
+        throw new Error('Invalid WAV file: missing WAVE identifier')
       }
 
-      // Move to next chunk (align to 16-bit boundary)
-      const nextPos = chunkOffset + chunkSize + (chunkSize % 2)
-      if (nextPos > this.reader.position) {
-        this.reader.position = nextPos
-      }
-    }
+      // Parse chunks - first pass to find ds64 if RF64
+      const metadata: AudioMetadata = {}
+      let infoChunk: { [key: string]: string } = {}
 
-    // Convert INFO chunk to metadata
-    for (const [tag, key] of Object.entries(INFO_TAGS)) {
-      if (infoChunk[tag]) {
-        if (key === 'trackNumber') {
-          metadata.trackNumber = Number.parseInt(infoChunk[tag], 10)
+      // For RF64, we need to read ds64 first to get actual sizes
+      if (this.isRf64) {
+        // ds64 must be the first chunk after WAVE
+        const ds64Id = await this.reader.readU32BE()
+        const ds64Size = await this.reader.readU32LE()
+
+        if (ds64Id === DS64_MAGIC && ds64Size !== null) {
+          await this.parseDs64Chunk(ds64Size)
+          fileSize = Number(this.ds64!.riffSize & 0xFFFFFFFFn)
         }
         else {
-          (metadata as Record<string, unknown>)[key] = infoChunk[tag]
+          throw new Error('Invalid RF64 file: ds64 chunk must be first')
         }
       }
-    }
 
-    this._metadata = metadata
+      // Continue parsing remaining chunks
+      const endPosition = this.isRf64 && this.ds64
+        ? Number(this.ds64.riffSize) + 8
+        : 8 + fileSize!
 
-    if (!this.format) {
-      throw new Error('Invalid WAV file: missing fmt chunk')
-    }
+      while (this.reader.position < endPosition) {
+        const chunkId = await this.reader.readU32BE()
+        let chunkSize = await this.reader.readU32LE()
 
-    if (!this.dataChunk) {
-      throw new Error('Invalid WAV file: missing data chunk')
-    }
+        if (chunkId === null || chunkSize === null) break
 
-    // Calculate sample info
-    this.bytesPerSample = this.format.bitsPerSample / 8
-    this.totalSamples = this.dataChunk.size / (this.bytesPerSample * this.format.channels)
+        // For RF64, check if size is placeholder
+        if (this.isRf64 && this.ds64 && chunkSize === RF64_SIZE_PLACEHOLDER) {
+          if (chunkId === DATA_MAGIC) {
+            chunkSize = Number(this.ds64.dataSize)
+          }
+        }
 
-    // Build track info
-    const track: AudioTrack = {
-      type: 'audio',
-      id: 1,
-      index: 0,
-      codec: formatCodeToCodec(this.format.formatCode),
-      sampleRate: this.format.sampleRate,
-      channels: this.format.channels,
-      bitDepth: this.format.bitsPerSample,
-      sampleFormat: formatToSampleFormat(this.format),
-      bitrate: this.format.byteRate * 8,
-      isDefault: true,
-    }
+        const chunkOffset = this.reader.position
 
-    this._tracks = [track]
-    this._duration = this.totalSamples / this.format.sampleRate
+        if (chunkId === FMT_MAGIC) {
+          await this.parseFmtChunk(chunkSize)
+        }
+        else if (chunkId === DATA_MAGIC) {
+          const actualSize = this.isRf64 && this.ds64 && chunkSize === RF64_SIZE_PLACEHOLDER
+            ? Number(this.ds64.dataSize)
+            : chunkSize
+          this.dataChunk = { id: chunkId, size: actualSize, offset: chunkOffset }
+        }
+        else if (chunkId === DS64_MAGIC) {
+          // Already parsed above for RF64
+        }
+        else if (chunkId === LIST_MAGIC) {
+          const listType = await this.reader.readU32BE()
+          if (listType === INFO_MAGIC) {
+            infoChunk = await this.parseInfoChunk(chunkSize - 4)
+          }
+        }
 
-    // Set position to start of audio data
-    this.currentPosition = this.dataChunk.offset
+        // Move to next chunk (align to 16-bit boundary)
+        const nextPos = chunkOffset + chunkSize + (chunkSize % 2)
+        if (nextPos > this.reader.position) {
+          this.reader.position = nextPos
+        }
+      }
+
+      // Convert INFO chunk to metadata
+      for (const [tag, key] of Object.entries(INFO_TAGS)) {
+        if (infoChunk[tag]) {
+          if (key === 'trackNumber') {
+            metadata.trackNumber = Number.parseInt(infoChunk[tag], 10)
+          }
+          else {
+            (metadata as Record<string, unknown>)[key] = infoChunk[tag]
+          }
+        }
+      }
+
+      this._metadata = metadata
+
+      if (!this.format) {
+        throw new Error('Invalid WAV file: missing fmt chunk')
+      }
+
+      if (!this.dataChunk) {
+        throw new Error('Invalid WAV file: missing data chunk')
+      }
+
+      // Calculate sample info
+      this.bytesPerSample = this.format.bitsPerSample / 8
+      this.totalSamples = this.dataChunk.size / (this.bytesPerSample * this.format.channels)
+
+      // Build track info
+      const track: AudioTrack = {
+        type: 'audio',
+        id: 1,
+        index: 0,
+        codec: formatCodeToCodec(this.format.formatCode),
+        sampleRate: this.format.sampleRate,
+        channels: this.format.channels,
+        bitDepth: this.format.bitsPerSample,
+        sampleFormat: formatToSampleFormat(this.format),
+        bitrate: this.format.byteRate * 8,
+        isDefault: true,
+      }
+
+      this._tracks = [track]
+      this._duration = this.totalSamples / this.format.sampleRate
+
+      // Set position to start of audio data
+      this.currentPosition = this.dataChunk.offset
+    })
   }
 
   private async parseFmtChunk(size: number): Promise<void> {

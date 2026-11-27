@@ -365,7 +365,6 @@ export class Mp3Demuxer extends Demuxer {
   private audioDataStart = 0
   private audioDataEnd = 0
   private currentFrameIndex = 0
-  private _initialized = false
 
   get formatName(): string {
     return 'mp3'
@@ -376,64 +375,64 @@ export class Mp3Demuxer extends Demuxer {
   }
 
   async init(): Promise<void> {
-    if (this._initialized) return
-    this._initialized = true
+    return this.initOnce(async () => {
 
-    // Read enough data for headers and scanning
-    const fileSize = await this.reader.getSize() ?? 0
-    this.audioDataEnd = fileSize
+      // Read enough data for headers and scanning
+      const fileSize = await this.reader.getSize() ?? 0
+      this.audioDataEnd = fileSize
 
-    // Check for ID3v2 at start
-    this.reader.position = 0
-    const headerData = await this.reader.readBytes(10)
-    if (headerData && headerData[0] === 0x49 && headerData[1] === 0x44 && headerData[2] === 0x33) {
-      const tagSize = ((headerData[6] & 0x7F) << 21) |
-                      ((headerData[7] & 0x7F) << 14) |
-                      ((headerData[8] & 0x7F) << 7) |
-                      (headerData[9] & 0x7F)
-
+      // Check for ID3v2 at start
       this.reader.position = 0
-      const id3Data = await this.reader.readBytes(10 + tagSize)
-      if (id3Data) {
-        this.id3v2 = parseID3v2(id3Data)
-        this.audioDataStart = 10 + tagSize
-      }
-    }
+      const headerData = await this.reader.readBytes(10)
+      if (headerData && headerData[0] === 0x49 && headerData[1] === 0x44 && headerData[2] === 0x33) {
+        const tagSize = ((headerData[6] & 0x7F) << 21) |
+                        ((headerData[7] & 0x7F) << 14) |
+                        ((headerData[8] & 0x7F) << 7) |
+                        (headerData[9] & 0x7F)
 
-    // Check for ID3v1 at end
-    if (fileSize >= 128) {
-      this.reader.position = fileSize - 128
-      const tailData = await this.reader.readBytes(128)
-      if (tailData && tailData[0] === 0x54 && tailData[1] === 0x41 && tailData[2] === 0x47) {
-        this.id3v1 = parseID3v1(tailData)
-        this.audioDataEnd = fileSize - 128
-      }
-    }
-
-    // Scan for MP3 frames
-    await this.scanFrames()
-
-    // Build track info
-    if (this.frames.length > 0) {
-      const firstFrame = this.frames[0]
-      const lastFrame = this.frames[this.frames.length - 1]
-
-      const track: AudioTrack = {
-        type: 'audio',
-        id: 1,
-        index: 0,
-        codec: 'mp3',
-        sampleRate: firstFrame.header.sampleRate,
-        channels: firstFrame.header.channels,
-        bitrate: firstFrame.header.bitrate,
-        isDefault: true,
+        this.reader.position = 0
+        const id3Data = await this.reader.readBytes(10 + tagSize)
+        if (id3Data) {
+          this.id3v2 = parseID3v2(id3Data)
+          this.audioDataStart = 10 + tagSize
+        }
       }
 
-      this._tracks = [track]
-      this._duration = lastFrame.timestamp + (lastFrame.header.samplesPerFrame / lastFrame.header.sampleRate)
-    }
+      // Check for ID3v1 at end
+      if (fileSize >= 128) {
+        this.reader.position = fileSize - 128
+        const tailData = await this.reader.readBytes(128)
+        if (tailData && tailData[0] === 0x54 && tailData[1] === 0x41 && tailData[2] === 0x47) {
+          this.id3v1 = parseID3v1(tailData)
+          this.audioDataEnd = fileSize - 128
+        }
+      }
 
-    this._metadata = convertID3ToMetadata(this.id3v1, this.id3v2)
+      // Scan for MP3 frames
+      await this.scanFrames()
+
+      // Build track info
+      if (this.frames.length > 0) {
+        const firstFrame = this.frames[0]
+        const lastFrame = this.frames[this.frames.length - 1]
+
+        const track: AudioTrack = {
+          type: 'audio',
+          id: 1,
+          index: 0,
+          codec: 'mp3',
+          sampleRate: firstFrame.header.sampleRate,
+          channels: firstFrame.header.channels,
+          bitrate: firstFrame.header.bitrate,
+          isDefault: true,
+        }
+
+        this._tracks = [track]
+        this._duration = lastFrame.timestamp + (lastFrame.header.samplesPerFrame / lastFrame.header.sampleRate)
+      }
+
+      this._metadata = convertID3ToMetadata(this.id3v1, this.id3v2)
+    })
   }
 
   private async scanFrames(): Promise<void> {

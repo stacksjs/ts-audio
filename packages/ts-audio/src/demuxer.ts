@@ -14,8 +14,28 @@ export abstract class Demuxer {
   protected _duration = 0
   protected _metadata: AudioMetadata = {}
 
+  /** The in-flight or settled init, so the parsing happens exactly once. */
+  private initPromise: Promise<void> | null = null
+
   constructor(source: Source | Reader) {
     this.reader = source instanceof Reader ? source : createReader(source)
+  }
+
+  /**
+   * Runs a demuxer's parsing once, however many callers ask for it.
+   *
+   * A flag set before the first `await` is not enough. A second caller
+   * arriving while the first is still reading passes the guard and gets a
+   * demuxer that has parsed nothing: no tracks, no duration. The same flag
+   * stayed set when parsing threw, so asking again returned a broken demuxer
+   * as though it were ready.
+   *
+   * The promise is kept whether it resolves or rejects, so a file that failed
+   * to parse keeps failing with the same error instead of appearing to work.
+   */
+  protected initOnce(work: () => Promise<void>): Promise<void> {
+    this.initPromise ??= work()
+    return this.initPromise
   }
 
   /**
