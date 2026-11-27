@@ -62,10 +62,12 @@ export {
   pcmPacketDecoder,
   resampleAudio,
 } from './audio-samples'
-export type { DecodeAudioOptions, DecodeAudioToWavOptions, DecodedWav } from './audio-decode'
+export type { DecodeAudioOptions, DecodeAudioPacketsOptions, DecodeAudioToWavOptions, DecodedWav } from './audio-decode'
 export {
   canDecodeAudioCodec,
+  createAudioDecoder,
   decodeAudio,
+  decodeAudioPackets,
   decodeAudioToWav,
   defaultInputFormats,
   registerAudioDecoder,

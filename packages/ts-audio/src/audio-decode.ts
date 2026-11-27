@@ -15,7 +15,7 @@
 
 import type { InputFormat } from './demuxer'
 import type { AudioDecoderFactory, AudioPacketDecoder, DecodedAudio, DecodedAudioChunk } from './audio-samples'
-import type { AudioCodec, AudioTrack, Source } from './types'
+import type { AudioCodec, AudioTrack, EncodedPacket, Source } from './types'
 import { AudioTooLongError, UnsupportedAudioCodecError } from './audio-errors'
 import { decodeWav, encodeWav, isWav, mixChannels, pcmPacketDecoder, resampleAudio } from './audio-samples'
 import { Input } from './input'
@@ -150,19 +150,7 @@ export async function decodeAudio(input: AudioInput, options: DecodeAudioOptions
     const track = await media.getPrimaryTrack()
     if (!track)
       throw new Error('No audio track found')
-    const decoder = await createDecoder(track)
-    const collector = new SampleCollector(options.maxDurationSeconds)
-    try {
-      for await (const packet of media.packets(track.id)) {
-        options.signal?.throwIfAborted()
-        collector.add(decoder.decode(packet))
-      }
-      collector.add(decoder.flush?.() ?? null)
-    }
-    finally {
-      decoder.close?.()
-    }
-    return collector.result(track)
+    return await decodeAudioPackets(track, media.packets(track.id), options)
   }
   finally {
     await media.close()
@@ -285,7 +273,17 @@ function isSource(value: unknown): value is Source {
   return typeof value === 'object' && value !== null && SOURCE_TYPES.includes((value as Source).type)
 }
 
-async function createDecoder(track: AudioTrack): Promise<AudioPacketDecoder> {
+/**
+ * The decoder for a track: one registered with `registerAudioDecoder` first,
+ * then the built-in codec package, loaded on demand; PCM needs no codec, and
+ * anything else is refused by name.
+ *
+ * Reach for this when you read the container yourself -- ts-videos reads MP4,
+ * WebM, Matroska and MPEG-TS -- and want the decoder ts-audio would have
+ * picked, registry and all. `decodeAudioPackets` is usually what you want
+ * instead; this is for driving the decoder packet by packet.
+ */
+export async function createAudioDecoder(track: AudioTrack): Promise<AudioPacketDecoder> {
   if (track.codec.startsWith('pcm_'))
     return pcmPacketDecoder(track)
   const registered = decoders.get(track.codec)
@@ -296,6 +294,39 @@ async function createDecoder(track: AudioTrack): Promise<AudioPacketDecoder> {
   if (!factory)
     throw new UnsupportedAudioCodecError(track.codec)
   return factory(track)
+}
+
+export interface DecodeAudioPacketsOptions {
+  /** Refuse audio longer than this many seconds, as soon as the decoded part is longer. */
+  maxDurationSeconds?: number
+  signal?: AbortSignal
+}
+
+/**
+ * One track's packets to samples: the same decoding `decodeAudio` does, for a
+ * track a caller read out of its own container. The packets may be a plain
+ * iterable or an async one, and the track's `trimStart` and `trimmedDuration`
+ * are applied, so the encoder's priming and padding go as they would here.
+ */
+export async function decodeAudioPackets(
+  track: AudioTrack,
+  packets: AsyncIterable<EncodedPacket> | Iterable<EncodedPacket>,
+  options: DecodeAudioPacketsOptions = {},
+): Promise<DecodedAudio> {
+  options.signal?.throwIfAborted()
+  const decoder = await createAudioDecoder(track)
+  const collector = new SampleCollector(options.maxDurationSeconds)
+  try {
+    for await (const packet of packets) {
+      options.signal?.throwIfAborted()
+      collector.add(decoder.decode(packet))
+    }
+    collector.add(decoder.flush?.() ?? null)
+  }
+  finally {
+    decoder.close?.()
+  }
+  return collector.result(track)
 }
 
 /** Joins decoded chunks, keeps to one rate and layout, and stops at the duration limit. */

@@ -1,8 +1,11 @@
 import { describe, expect, test } from 'bun:test'
+import type { AudioTrack, EncodedPacket } from './types'
 import {
   AudioTooLongError,
   canDecodeAudioCodec,
+  createAudioDecoder,
   decodeAudio,
+  decodeAudioPackets,
   decodeAudioToWav,
   decodeWav,
   encodeWav,
@@ -249,5 +252,108 @@ describe('compressed codecs', () => {
     expect(canDecodeAudioCodec('vorbis')).toBe(true)
     unregister()
     expect(canDecodeAudioCodec('vorbis')).toBe(false)
+  })
+})
+
+describe('decodeAudioPackets', () => {
+  // What a caller with its own container reader does: ts-videos reads MP4,
+  // WebM, Matroska and MPEG-TS, then hands each track's packets over here.
+  const sampleRate = 8000
+  const frames = 4000
+  const tone = sine(440, sampleRate, frames / sampleRate)
+
+  /** The tone as four packets of interleaved 16-bit PCM, as a container would carry it. */
+  function pcmPackets(): EncodedPacket[] {
+    const perPacket = frames / 4
+    return Array.from({ length: 4 }, (_, p) => {
+      const data = new Uint8Array(perPacket * 2)
+      const view = new DataView(data.buffer)
+      for (let i = 0; i < perPacket; i++) view.setInt16(i * 2, Math.round(tone[p * perPacket + i] * 32767), true)
+      return { data, timestamp: p * perPacket / sampleRate, duration: perPacket / sampleRate, isKeyframe: true, trackId: 1 }
+    })
+  }
+
+  const pcmTrack = (extra: Partial<AudioTrack> = {}): AudioTrack => ({
+    type: 'audio',
+    id: 1,
+    index: 0,
+    codec: 'pcm_s16le',
+    sampleRate,
+    channels: 1,
+    ...extra,
+  })
+
+  test('decodes a track a caller read out of its own container', async () => {
+    const decoded = await decodeAudioPackets(pcmTrack(), pcmPackets())
+    expect(decoded).toMatchObject({ sampleRate, codec: 'pcm_s16le' })
+    expect(decoded.channels).toHaveLength(1)
+    expect(decoded.channels[0].length).toBe(frames)
+    expect(decoded.duration).toBeCloseTo(frames / sampleRate, 6)
+    for (let i = 0; i < frames; i++) expect(Math.abs(decoded.channels[0][i] - tone[i])).toBeLessThan(1 / 16384)
+  })
+
+  test('takes a plain iterable of packets as well as an async one', async () => {
+    async function* streamed(): AsyncGenerator<EncodedPacket> {
+      for (const packet of pcmPackets()) yield packet
+    }
+    const [sync, async] = await Promise.all([decodeAudioPackets(pcmTrack(), pcmPackets()), decodeAudioPackets(pcmTrack(), streamed())])
+    expect(async.channels[0]).toEqual(sync.channels[0])
+  })
+
+  test('drops the priming and padding the container marks', async () => {
+    const decoded = await decodeAudioPackets(pcmTrack({ trimStart: 0.1, trimmedDuration: 0.2 }), pcmPackets())
+    expect(decoded.channels[0].length).toBe(1600)
+    expect(decoded.duration).toBeCloseTo(0.2, 6)
+    // The samples kept start 800 frames in, where trimStart says the sound does.
+    for (let i = 0; i < 1600; i++) expect(Math.abs(decoded.channels[0][i] - tone[800 + i])).toBeLessThan(1 / 16384)
+  })
+
+  test('refuses audio over the duration limit', async () => {
+    await expect(decodeAudioPackets(pcmTrack(), pcmPackets(), { maxDurationSeconds: 0.3 })).rejects.toBeInstanceOf(AudioTooLongError)
+    await expect(decodeAudioPackets(pcmTrack(), pcmPackets(), { maxDurationSeconds: 1 })).resolves.toMatchObject({ sampleRate })
+  })
+
+  test('stops when it is cancelled', async () => {
+    const controller = new AbortController()
+    controller.abort()
+    await expect(decodeAudioPackets(pcmTrack(), pcmPackets(), { signal: controller.signal })).rejects.toThrow()
+  })
+
+  test('uses the registered decoder, so one registry serves both ways in', async () => {
+    let packets = 0
+    const unregister = registerAudioDecoder('vorbis', track => ({
+      decode: () => {
+        packets++
+        return { sampleRate: track.sampleRate, channels: [new Float32Array(512)] }
+      },
+    }))
+    try {
+      const decoded = await decodeAudioPackets(pcmTrack({ codec: 'vorbis' }), pcmPackets())
+      expect(packets).toBe(4)
+      expect(decoded.codec).toBe('vorbis')
+      expect(decoded.channels[0].length).toBe(4 * 512)
+    }
+    finally {
+      unregister()
+    }
+  })
+
+  test('names the codec it has no decoder for', async () => {
+    await expect(createAudioDecoder(pcmTrack({ codec: 'vorbis' }))).rejects.toBeInstanceOf(UnsupportedAudioCodecError)
+    await expect(decodeAudioPackets(pcmTrack({ codec: 'vorbis' }), pcmPackets())).rejects.toBeInstanceOf(UnsupportedAudioCodecError)
+  })
+
+  test('loads the built-in codec package for a compressed track', async () => {
+    const { readMp3Frames } = await import('@ts-audio/mp3')
+    const file = new Uint8Array(await Bun.file(fixture('tone.mp3')).arrayBuffer())
+    const { frames: mp3Frames, header } = readMp3Frames(file)
+    const decoded = await decodeAudioPackets(
+      { type: 'audio', id: 1, index: 0, codec: 'mp3', sampleRate: header.sampleRate, channels: header.channels },
+      mp3Frames.map((data, i) => ({ data, timestamp: i * header.samples / header.sampleRate, duration: header.samples / header.sampleRate, isKeyframe: true, trackId: 1 })),
+    )
+    expect(decoded.codec).toBe('mp3')
+    expect(decoded.sampleRate).toBe(header.sampleRate)
+    expect(decoded.channels[0].length).toBe(mp3Frames.length * header.samples)
+    expect(Math.max(...decoded.channels[0].map(Math.abs))).toBeGreaterThan(0.01)
   })
 })
