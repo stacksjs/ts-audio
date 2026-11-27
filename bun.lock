@@ -14,7 +14,7 @@
       "version": "0.1.2",
       "devDependencies": {
         "@ts-audio/core": "workspace:*",
-        "bun-plugin-dtsx": "^0.9.9",
+        "bun-plugin-dtsx": "^0.11.38",
       },
       "peerDependencies": {
         "@ts-audio/core": "workspace:*",
@@ -25,7 +25,7 @@
       "version": "0.1.2",
       "devDependencies": {
         "@ts-audio/core": "workspace:*",
-        "bun-plugin-dtsx": "^0.9.9",
+        "bun-plugin-dtsx": "^0.11.38",
       },
       "peerDependencies": {
         "@ts-audio/core": "workspace:*",
@@ -36,7 +36,7 @@
       "version": "0.1.2",
       "devDependencies": {
         "@ts-audio/core": "workspace:*",
-        "bun-plugin-dtsx": "^0.9.9",
+        "bun-plugin-dtsx": "^0.11.38",
       },
       "peerDependencies": {
         "@ts-audio/core": "workspace:*",
@@ -47,7 +47,7 @@
       "version": "0.1.2",
       "devDependencies": {
         "@ts-audio/core": "workspace:*",
-        "bun-plugin-dtsx": "^0.9.9",
+        "bun-plugin-dtsx": "^0.11.38",
       },
       "peerDependencies": {
         "@ts-audio/core": "workspace:*",
@@ -59,7 +59,7 @@
       "devDependencies": {
         "@ts-audio/core": "workspace:*",
         "@ts-audio/ogg": "workspace:*",
-        "bun-plugin-dtsx": "^0.9.9",
+        "bun-plugin-dtsx": "^0.11.38",
       },
       "peerDependencies": {
         "@ts-audio/core": "workspace:*",
@@ -73,9 +73,9 @@
         "ts-audio": "./dist/bin/cli.js",
       },
       "devDependencies": {
-        "@stacksjs/clapp": "^0.2.0",
-        "better-dx": "^0.2.5",
-        "bun-plugin-dtsx": "^0.9.9",
+        "@stacksjs/clapp": "^0.2.17",
+        "better-dx": "^0.2.40",
+        "bun-plugin-dtsx": "^0.11.38",
       },
       "optionalDependencies": {
         "@ts-audio/aac": "workspace:*",
@@ -93,7 +93,7 @@
       "devDependencies": {
         "@ts-audio/core": "workspace:*",
         "@ts-audio/ogg": "workspace:*",
-        "bun-plugin-dtsx": "^0.9.9",
+        "bun-plugin-dtsx": "^0.11.38",
       },
       "peerDependencies": {
         "@ts-audio/core": "workspace:*",
@@ -105,7 +105,7 @@
       "version": "0.1.2",
       "devDependencies": {
         "@ts-audio/core": "workspace:*",
-        "bun-plugin-dtsx": "^0.9.9",
+        "bun-plugin-dtsx": "^0.11.38",
       },
       "peerDependencies": {
         "@ts-audio/core": "workspace:*",
@@ -119,7 +119,7 @@
 
     "@dtsx/bun": ["@dtsx/bun@0.11.56", "", { "dependencies": { "@dtsx/dtsx": "0.11.56" } }, "sha512-688u41g8E54iy967Bx9BIAoynxkeK78ATFkRtRpUvGDzkz+0o9cMlHuC2zoKmFgHK2pmVfYGXrHJh5prG+XB1w=="],
 
-    "@dtsx/dtsx": ["@dtsx/dtsx@0.11.56", "", { "peerDependencies": { "prettier": "^3.10.1" }, "optionalPeers": ["prettier"], "bin": { "dtsx": "./dist/bin/cli.js" } }, "sha512-Z13CdX5XJzlzmG4+zw7ijJ+86XMUWjzS66MRrTe4cWsfd+fk67W91YrOIqIBPuQZHVGJVzBIERtAzUuemcJA5Q=="],
+    "@dtsx/dtsx": ["@dtsx/dtsx@0.11.38", "", { "peerDependencies": { "prettier": "^3.9.10" }, "optionalPeers": ["prettier"], "bin": { "dtsx": "./dist/bin/cli.js" } }, "sha512-ZNc+6v59/zcGyYZd/0Yzs4/S6ajvu1das4Pn+WowKdlT9kwcnk5BpVfbfGRDe/AljG83MAnGA/dNZCIvQ/hePA=="],
 
     "@stacksjs/bumpx": ["@stacksjs/bumpx@0.2.35", "", { "dependencies": { "@stacksjs/clapp": "^0.2.0", "@stacksjs/logsmith": "^0.2.16", "bunfig": "^0.15.6" }, "bin": { "bumpx": "./dist/bin/cli.js" } }, "sha512-UMdiwgIKbKKKxXr7bqv5/W0UIA8TrqoAYZlVpez7CRIpmPQtDyzwdntEhlbSheqWMTnUYos5XXKRZCQlRGYdMQ=="],
 
@@ -130,8 +130,6 @@
     "@stacksjs/clarity": ["@stacksjs/clarity@0.3.33", "", { "dependencies": { "bunfig": "^0.15.6" }, "bin": { "clarity": "./dist/bin/cli.js" } }, "sha512-+5GLKnAI/M/z64UfNLLfQqx/kp+frmRY+NZXYwwGwbrkud/xlsEGDWEExdhqOhqEDMWdb1oafw/ubGAPg1PaFw=="],
 
     "@stacksjs/desktop": ["@stacksjs/desktop@0.2.955", "", { "dependencies": { "craft-native": ">=0.0.442" } }, "sha512-RGMJvgsV6aZjcwcQchhy9xrAGMAPGdvSQP8y7GXAzKUgK+JAraUV1nyLVSeKCwGDFQoFabc+x8eM2OADZGXv3A=="],
-
-    "@stacksjs/dtsx": ["@stacksjs/dtsx@0.9.26", "", { "dependencies": { "@stacksjs/clapp": "^0.2.0" }, "peerDependencies": { "typescript": ">=5.9.3" }, "bin": { "dtsx": "./dist/bin/cli.js" } }, "sha512-MOUxZn8BhXpFYM+vh7cnQLUOLjZ4G6q76V+4OypkRiu/Gvpek9ywBQLbmv8iWLjT6gXlFMpEdw33o3GKKLpMCw=="],
 
     "@stacksjs/env": ["@stacksjs/env@0.75.695", "", { "dependencies": { "@stacksjs/path": "0.75.695", "@stacksjs/ts-validation": "^0.5.7" } }, "sha512-F5dMMNauvM8Kp+T/2KBXz4CIKWph4PVzw4bynFFXh+ty21YXQDFnHH9WcXuJAcZFyCpkUwEq+Ir82OoKwBMMeg=="],
 
@@ -209,7 +207,7 @@
 
     "bun-git-hooks": ["bun-git-hooks@0.3.3", "", { "bin": { "git-hooks": "./dist/bin/cli.js", "bun-git-hooks": "./dist/bin/cli.js" } }, "sha512-kcg8teRh/cMs8uZyt/+A/bBuJnmc6EvjnBJ12pWEJ61L9z3uSuqm0mvjrYX4Iu7SZPAwpvAK5fFKmqevS4WBkA=="],
 
-    "bun-plugin-dtsx": ["bun-plugin-dtsx@0.9.26", "", { "dependencies": { "@stacksjs/dtsx": "0.9.26" } }, "sha512-dOlA+gx3mju+Be0uoZqsuQ3U+GPu08wv7QQwA1k569tw8Bv9GwVWJz0jjQw6tzJi9Rvwfl31MVXu9rHYQXSKow=="],
+    "bun-plugin-dtsx": ["bun-plugin-dtsx@0.11.38", "", { "dependencies": { "@dtsx/dtsx": "0.11.38" } }, "sha512-gMYc7jSz3NT9oEiOlF27V5QI6gnWR48w8FRMNLu7ZkLYAc3ZLMRSuL4pVO7UB9tYHR9doLUp8w5mrycvx27wzw=="],
 
     "bun-types": ["bun-types@1.4.5", "", { "dependencies": { "@types/node": "*", "undici-types": "*" } }, "sha512-ECHn+9dhL3wv0G6u0+7dQvrnaimXiRDxxerYBmhTaLyJEEuvTPWk2Fye3XIf5Y++JIIiHKfQw4Z7V5D8KuiXbg=="],
 
@@ -249,7 +247,7 @@
 
     "undici-types": ["undici-types@8.3.0", "", {}, "sha512-j375ScV60dom+YkPFIfTLcOiPxkN/buHz5GobjLhixFuANaNs3C9l4GmrWqejgXWJ7BbJcFYpTEUkS1Ge8bpZQ=="],
 
-    "@stacksjs/dtsx/typescript": ["typescript@6.0.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-y2TvuxSZPDyQakkFRPZHKFm+KKVqIisdg9/CZwm9ftvKXLP8NRWj38/ODjNbr43SsoXqNuAisEf1GdCxqWcdBw=="],
+    "@dtsx/bun/@dtsx/dtsx": ["@dtsx/dtsx@0.11.56", "", { "peerDependencies": { "prettier": "^3.10.1" }, "optionalPeers": ["prettier"], "bin": { "dtsx": "./dist/bin/cli.js" } }, "sha512-Z13CdX5XJzlzmG4+zw7ijJ+86XMUWjzS66MRrTe4cWsfd+fk67W91YrOIqIBPuQZHVGJVzBIERtAzUuemcJA5Q=="],
 
     "@stacksjs/stx/bunfig": ["bunfig@0.15.21", "", { "dependencies": { "@stacksjs/clarity": "^0.3.24" }, "bin": { "bunfig": "./dist/cli.js" } }, "sha512-CuOLpPGC+ESF+Y0V8g4B04Y5JR49sZpYSye34n+vfsk2wGJu0wyBYVk9dICLtJZq6yfaaqoPc7MkLSkFdJ9akw=="],
 
