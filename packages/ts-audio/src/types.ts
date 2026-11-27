@@ -61,6 +61,14 @@ export interface AudioTrack {
   isDefault?: boolean
   isForced?: boolean
   codecDescription?: Uint8Array
+  /**
+   * Seconds of encoder priming at the start that the container marks as not
+   * to be played (an MP4 edit list, Matroska's CodecDelay). `decodeAudio`
+   * drops them.
+   */
+  trimStart?: number
+  /** Seconds to keep after `trimStart`, when the container says where the sound ends. */
+  trimmedDuration?: number
 }
 
 // Encoded packet from demuxer

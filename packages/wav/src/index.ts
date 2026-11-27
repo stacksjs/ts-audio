@@ -749,3 +749,12 @@ export const RF64_OUTPUT: Rf64OutputFormat = new Rf64OutputFormat()
 export const AUTO_WAV_OUTPUT: AutoWavOutputFormat = new AutoWavOutputFormat()
 
 export type { WavFormat, RiffChunk, Ds64Chunk }
+
+/**
+ * WAV to samples and back, in one synchronous call, beside the demuxer above
+ * that reads a Source packet by packet. These live in @ts-audio/core, which
+ * reads PCM itself and would otherwise have to depend on this package; they
+ * are re-exported here because this is where a reader looks for them.
+ */
+export { decodeWav, deinterleavePcm, encodeWav, isWav } from '@ts-audio/core'
+export type { DecodedAudio, PcmEncoding } from '@ts-audio/core'
