@@ -27,6 +27,7 @@ await build({
     '@ts-audio/flac',
     '@ts-audio/ogg',
     '@ts-audio/opus',
+    '@ts-audio/vorbis',
     '@stacksjs/clapp',
   ],
   plugins: [dts()],
@@ -46,6 +47,7 @@ await build({
     '@ts-audio/flac',
     '@ts-audio/ogg',
     '@ts-audio/opus',
+    '@ts-audio/vorbis',
     '@stacksjs/clapp',
   ],
 })

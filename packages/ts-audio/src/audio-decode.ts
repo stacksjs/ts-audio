@@ -5,7 +5,7 @@
  * `decodeAudioToWav` also resamples, mixes down and writes a 16-bit WAV, the
  * shape a speech-to-text service takes (16 kHz mono by default).
  *
- * WAV, Ogg Opus and MP3 files are read here directly. Every other container
+ * WAV, Ogg (Vorbis or Opus) and MP3 files are read here directly. Every other container
  * goes through the input formats (ADTS AAC from @ts-audio/aac, FLAC from
  * @ts-audio/flac, Ogg from @ts-audio/ogg, and whatever else is registered).
  * AAC, Opus and MP3 are decoded in TypeScript by the codec packages, which
@@ -51,6 +51,7 @@ const builtInDecoders: Record<string, () => Promise<AudioDecoderFactory>> = {
   flac: async () => (await import('@ts-audio/flac')).createFlacDecoder,
   mp3: async () => (await import('@ts-audio/mp3')).createMp3Decoder,
   opus: async () => (await import('@ts-audio/opus')).createOpusDecoder,
+  vorbis: async () => (await import('@ts-audio/vorbis')).createVorbisDecoder,
 }
 
 /**
@@ -205,7 +206,14 @@ async function decodeDirect(bytes: Uint8Array, options: DecodeAudioOptions): Pro
   let codec: AudioCodec
   const opus = await optional(() => import('@ts-audio/opus'))
   const mp3 = await optional(() => import('@ts-audio/mp3'))
-  if (opus?.isOgg(bytes)) {
+  const vorbis = await optional(() => import('@ts-audio/vorbis'))
+  // An Ogg file may hold either codec, so the more specific test comes first;
+  // anything else in an Ogg container is named by decodeOggOpus's error.
+  if (vorbis?.isOggVorbis(bytes)) {
+    decoded = vorbis.decodeOggVorbis(bytes, { signal: options.signal, maxDurationSeconds: limit })
+    codec = 'vorbis'
+  }
+  else if (opus?.isOgg(bytes)) {
     decoded = opus.decodeOggOpus(bytes, options.signal)
     codec = 'opus'
   }

@@ -83,7 +83,21 @@
         "@ts-audio/mp3": "workspace:*",
         "@ts-audio/ogg": "workspace:*",
         "@ts-audio/opus": "workspace:*",
+        "@ts-audio/vorbis": "workspace:*",
         "@ts-audio/wav": "workspace:*",
+      },
+    },
+    "packages/vorbis": {
+      "name": "@ts-audio/vorbis",
+      "version": "0.1.2",
+      "devDependencies": {
+        "@ts-audio/core": "workspace:*",
+        "@ts-audio/ogg": "workspace:*",
+        "bun-plugin-dtsx": "^0.9.9",
+      },
+      "peerDependencies": {
+        "@ts-audio/core": "workspace:*",
+        "@ts-audio/ogg": "workspace:*",
       },
     },
     "packages/wav": {
@@ -162,6 +176,8 @@
     "@ts-audio/ogg": ["@ts-audio/ogg@workspace:packages/ogg"],
 
     "@ts-audio/opus": ["@ts-audio/opus@workspace:packages/opus"],
+
+    "@ts-audio/vorbis": ["@ts-audio/vorbis@workspace:packages/vorbis"],
 
     "@ts-audio/wav": ["@ts-audio/wav@workspace:packages/wav"],
 

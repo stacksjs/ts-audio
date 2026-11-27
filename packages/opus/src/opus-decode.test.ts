@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
-import { decodeAudio, decodeAudioToWav, decodeWav } from '@ts-audio/core'
-import { readOggPackets } from './opus-audio'
+import { decodeAudio, decodeAudioToWav, decodeWav, UnsupportedAudioCodecError } from '@ts-audio/core'
+import { decodeOggOpus, readOggPackets } from './opus-audio'
 import { OpusDecoder, parseOpusPacket } from './opus-decoder'
 
 const fixture = (path: string): string => new URL(`../test/fixtures/voice/${path}`, import.meta.url).pathname
@@ -64,8 +64,10 @@ describe('Opus', () => {
     expect(wav.durationSeconds).toBeCloseTo(reference.length / 48000, 3)
   })
 
-  test('says plainly that Ogg Vorbis is not Opus', async () => {
-    // One Ogg page holding a Vorbis identification header.
+  test('says plainly that Ogg Vorbis is not Opus', () => {
+    // One Ogg page holding a Vorbis identification header. decodeAudio now
+    // hands a Vorbis stream to @ts-audio/vorbis rather than refusing it, so
+    // the refusal belongs to decodeOggOpus, which is what reads Ogg Opus.
     const packet = new Uint8Array([1, ...new TextEncoder().encode('vorbis'), ...new Array(23).fill(0)])
     const page = new Uint8Array(28 + packet.length)
     page.set(new TextEncoder().encode('OggS'))
@@ -73,7 +75,8 @@ describe('Opus', () => {
     page[26] = 1
     page[27] = packet.length
     page.set(packet, 28)
-    await expect(decodeAudio(page)).rejects.toThrow('vorbis')
+    expect(() => decodeOggOpus(page)).toThrow(UnsupportedAudioCodecError)
+    expect(() => decodeOggOpus(page)).toThrow('vorbis')
   })
 })
 

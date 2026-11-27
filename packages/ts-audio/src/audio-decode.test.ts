@@ -242,17 +242,36 @@ describe('compressed codecs', () => {
     expect(Math.max(...real.channels[0])).toBeGreaterThan(0.01)
   })
 
+  test('reads a real-world Ogg Vorbis file, not one of our own making', async () => {
+    // test/fixtures/tone.ogg is MDN's concert crowd recording: stereo, 32 kHz,
+    // sixteen seconds of noise and transients, encoded by someone else's
+    // encoder. libvorbis decodes it to the same 499,968 samples we do, and
+    // agrees with us to better than 80 dB -- the check lives in the vorbis
+    // package; here it only has to come out whole.
+    const decoded = await decodeAudio(fixture('tone.ogg'))
+    expect(decoded).toMatchObject({ codec: 'vorbis', sampleRate: 32000 })
+    expect(decoded.channels).toHaveLength(2)
+    expect(decoded.channels[0].length).toBe(499968)
+    expect(decoded.duration).toBeCloseTo(499968 / 32000, 6)
+    // Real sound in both channels, and nothing clipped on the way through.
+    for (const channel of decoded.channels) {
+      expect(rms(channel)).toBeGreaterThan(0.01)
+      expect(Math.max(...channel.map(Math.abs))).toBeLessThanOrEqual(1)
+    }
+  })
+
   test('says which codecs it can read without loading a decoder for them', () => {
     expect(canDecodeAudioCodec('pcm_s16le')).toBe(true)
     expect(canDecodeAudioCodec('aac')).toBe(true)
     expect(canDecodeAudioCodec('flac')).toBe(true)
     expect(canDecodeAudioCodec('mp3')).toBe(true)
     expect(canDecodeAudioCodec('opus')).toBe(true)
-    expect(canDecodeAudioCodec('vorbis')).toBe(false)
-    const unregister = registerAudioDecoder('vorbis', () => ({ decode: () => null }))
     expect(canDecodeAudioCodec('vorbis')).toBe(true)
+    expect(canDecodeAudioCodec('alac')).toBe(false)
+    const unregister = registerAudioDecoder('alac', () => ({ decode: () => null }))
+    expect(canDecodeAudioCodec('alac')).toBe(true)
     unregister()
-    expect(canDecodeAudioCodec('vorbis')).toBe(false)
+    expect(canDecodeAudioCodec('alac')).toBe(false)
   })
 })
 
@@ -340,8 +359,10 @@ describe('decodeAudioPackets', () => {
   })
 
   test('names the codec it has no decoder for', async () => {
-    await expect(createAudioDecoder(pcmTrack({ codec: 'vorbis' }))).rejects.toBeInstanceOf(UnsupportedAudioCodecError)
-    await expect(decodeAudioPackets(pcmTrack({ codec: 'vorbis' }), pcmPackets())).rejects.toBeInstanceOf(UnsupportedAudioCodecError)
+    // ALAC, which nothing here decodes yet; Vorbis used to stand in for this
+    // until @ts-audio/vorbis gave it a decoder.
+    await expect(createAudioDecoder(pcmTrack({ codec: 'alac' }))).rejects.toBeInstanceOf(UnsupportedAudioCodecError)
+    await expect(decodeAudioPackets(pcmTrack({ codec: 'alac' }), pcmPackets())).rejects.toBeInstanceOf(UnsupportedAudioCodecError)
   })
 
   test('loads the built-in codec package for a compressed track', async () => {

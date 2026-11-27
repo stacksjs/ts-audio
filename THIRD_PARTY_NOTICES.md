@@ -28,6 +28,20 @@ WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 License for the specific language governing permissions and limitations under
 the License.
 
+## Vorbis I specification
+
+`packages/vorbis/src/vorbis-floor-table.ts` holds floor1_inverse_dB_table,
+the 256 normative amplitudes of the Vorbis I specification, as published by
+Xiph.Org alongside libvorbis. The decoder in `packages/vorbis/src/` is written
+from that specification rather than ported from libvorbis.
+
+`packages/vorbis/test/fixtures/voice/vorbis-ref.c` builds the fixtures and the
+reference decodes they are checked against by linking libvorbis, under the
+licence below. It is a development tool: it is neither shipped nor needed to
+use this package.
+
+Copyright (c) 2002-2020 Xiph.Org Foundation
+
 ## libopus
 
 `packages/opus/src/` (the Opus, SILK and CELT decoders and their tables) is

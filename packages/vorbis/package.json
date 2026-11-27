@@ -1,0 +1,52 @@
+{
+  "name": "@ts-audio/vorbis",
+  "type": "module",
+  "sideEffects": false,
+  "version": "0.1.2",
+  "description": "Vorbis codec package for ts-audio - zero dependency TypeScript implementation.",
+  "author": "Chris Breuer <chris@stacksjs.org>",
+  "license": "MIT",
+  "homepage": "https://github.com/stacksjs/ts-audio",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/stacksjs/ts-audio.git"
+  },
+  "bugs": {
+    "url": "https://github.com/stacksjs/ts-audio/issues"
+  },
+  "keywords": [
+    "vorbis",
+    "ogg",
+    "audio",
+    "codec",
+    "decoder",
+    "typescript",
+    "zero-dependency"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "README.md",
+    "dist"
+  ],
+  "scripts": {
+    "build": "bun build.ts",
+    "test": "bun test",
+    "typecheck": "bunx tsc --noEmit"
+  },
+  "peerDependencies": {
+    "@ts-audio/core": "workspace:*",
+    "@ts-audio/ogg": "workspace:*"
+  },
+  "devDependencies": {
+    "@ts-audio/core": "workspace:*",
+    "@ts-audio/ogg": "workspace:*",
+    "bun-plugin-dtsx": "^0.9.9"
+  }
+}
