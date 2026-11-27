@@ -66,9 +66,13 @@ ts-audio formats
 
 ## convert
 
-Copies packets into another container, and trims.
+Converts between containers and codecs. It copies the packets when it can, and
+decodes and encodes again when it must.
 
 ```bash
+ts-audio convert song.mp3 song.flac                  # any input, to lossless
+ts-audio convert voice.ogg voice.wav --sample-rate 16000 --channels 1
+ts-audio convert in.flac out.wav                     # every sample kept
 ts-audio convert in.wav out.wav --start 00:00:10 --end 00:00:20
 ```
 
@@ -76,16 +80,23 @@ ts-audio convert in.wav out.wav --start 00:00:10 --end 00:00:20
 | --- | --- |
 | `--start <time>` | seconds, or `HH:MM:SS` |
 | `--end <time>` | seconds, or `HH:MM:SS` |
+| `--sample-rate <rate>` | resample to this rate |
+| `--channels <n>` | mix to mono or stereo |
+| `--normalize` | raise the loudest sample to full scale |
+| `--codec <codec>` | `pcm` or `flac`, if not what the extension implies |
 | `--verbose` | show progress |
 
-The options below are accepted and then **refused**, because each needs an
-encoder: `--codec`, `--bitrate`, `--sample-rate`, `--channels`, `--normalize`.
-The error names what it cannot do:
+The output's extension says what to write. WAV and FLAC can be written from
+anything ts-audio decodes; MP3, AAC and Ogg can only be copied into, from a
+source already in that codec.
+
+What it refuses, and says so:
 
 ```
-Error: Packet-copy conversion cannot perform codec pcm to mp3; a native decoder and encoder are required
+Error: ts-audio has no mp3 encoder, so it cannot convert pcm to mp3. ...
+Error: A bitrate does not apply to FLAC, which is lossless
+Error: Mixing to 6 channels is not supported; to mono or stereo is
 ```
 
-A container that cannot carry the source codec is refused the same way, so
-`convert in.wav out.mp3` fails rather than writing an MP3 full of PCM. See
-[Conversion](./audio-conversion.md).
+See [Conversion](./audio-conversion.md) for when it copies and when it
+re-encodes.

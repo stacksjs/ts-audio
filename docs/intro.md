@@ -29,9 +29,9 @@ Worth knowing before you start:
 
 - **It encodes PCM and FLAC, and nothing lossy.** `encodeWav` writes PCM and
   `encodeFlac` compresses losslessly; there are no MP3, AAC, Opus or Vorbis
-  encoders. `Conversion` itself only copies packets, so it refuses anything that
-  would need an encoder, with an error saying so, rather than writing a file
-  that is wrong.
+  encoders. `Conversion` copies packets when nothing about the audio changes,
+  and otherwise decodes and encodes to WAV or FLAC; converting to a lossy codec
+  is refused with an error saying so, rather than writing a file that is wrong.
   Where the runtime provides WebCodecs, `transcodeAudioWithWebCodecs` uses the
   platform's own encoder.
 - **It does not read video containers.** MP4, MOV, WebM, Matroska and MPEG-TS

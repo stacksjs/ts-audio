@@ -114,16 +114,17 @@ Being clear about the edges, since they are easy to hit:
   losslessly — within a couple of percent of libFLAC's default level, and every
   file it writes passes `flac --test`. There are no lossy encoders, so MP3, AAC,
   Opus and Vorbis cannot be written from samples.
-- **`convert` still only copies packets.** It does not yet call `encodeFlac`, so
-  `convert in.wav out.flac` is refused; decode, then `encodeFlac`. It refuses
-  anything needing an encoder — a
-  codec change, resampling, a channel or bitrate change, normalisation, fades —
-  with an error naming what it cannot do, rather than writing a file that is
-  wrong. Where the runtime provides WebCodecs, `transcodeAudioWithWebCodecs`
-  uses the platform's own encoder; browsers have it and Bun does not.
-  A container that cannot carry the codec is refused too: every output format
-  declares what it carries, so converting a WAV to `out.mp3` fails with "the
-  mp3 container cannot carry pcm audio" instead of writing PCM into an MP3.
+- **`convert` copies when it can and re-encodes when it must.** If nothing
+  about the audio changes and the container can carry the codec, the packets go
+  across untouched. Otherwise it decodes and encodes again — so any input it can
+  read becomes WAV or FLAC, and resampling, mixing to mono or stereo, a bit
+  depth, a time range to the sample, volume, normalising and fades all work.
+  Lossless to lossless keeps every sample. Converting to a lossy codec is
+  refused by name, since there is no lossy encoder here: "ts-audio has no mp3
+  encoder". So is a container that cannot carry what would be written into it.
+- **Tags are read, not written.** Every container's tags come back through
+  `getMetadata`, but no muxer or encoder writes them yet, so a converted file
+  comes out untagged.
 - **No MP4, MOV, WebM or Matroska.** Those are containers, and they live in
   [ts-videos][ts-videos]; feed their packets here.
 - **Refused rather than guessed at:** ALAC (no decoder), 32-bit FLAC, Vorbis

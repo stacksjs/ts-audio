@@ -102,6 +102,14 @@ export class Input {
   }
 
   /**
+   * The source this input reads, for a caller that has to read it a second
+   * way -- as Conversion does when it decodes rather than copying packets.
+   */
+  getSource(): Source {
+    return this.source
+  }
+
+  /**
    * Get the format name
    */
   async getFormatName(): Promise<string> {

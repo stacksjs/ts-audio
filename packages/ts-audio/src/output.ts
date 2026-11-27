@@ -4,6 +4,7 @@
 
 import type { Target, AudioTrackConfig, OutputAudioTrack, EncodedPacket, AudioMetadata } from './types'
 import { assertCodecSupported, Muxer, OutputFormat } from './muxer'
+import { writeToTarget } from './target'
 
 /**
  * Registered output formats
@@ -53,11 +54,27 @@ export interface OutputOptions {
 export class Output {
   private muxer: Muxer
   private format: OutputFormat
+  private target: Target
 
   constructor(options: OutputOptions) {
     this.format = options.format
-    const target = options.target ?? { type: 'buffer' }
-    this.muxer = this.format.createMuxer(target)
+    this.target = options.target ?? { type: 'buffer' }
+    this.muxer = this.format.createMuxer(this.target)
+  }
+
+  /** The container this output writes. */
+  getFormat(): OutputFormat {
+    return this.format
+  }
+
+  /**
+   * Writes a file an encoder produced whole -- encodeFlac and encodeWav each
+   * return a complete container -- to this output's target, in place of what
+   * the muxer would have written. Returns the bytes.
+   */
+  async writeFile(bytes: Uint8Array): Promise<Uint8Array> {
+    await writeToTarget(this.target, bytes)
+    return bytes
   }
 
   /**

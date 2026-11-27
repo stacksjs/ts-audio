@@ -214,11 +214,30 @@ function wavCodec(encoding: PcmEncoding): AudioCodec {
   }
 }
 
-/** Planar floats to a 16-bit PCM WAV, clipped to range. */
-export function encodeWav(channels: Float32Array[], sampleRate: number): Uint8Array {
+export interface EncodeWavOptions {
+  /** 8, 16, 24 or 32-bit integer PCM. Default 16. */
+  bitDepth?: 8 | 16 | 24 | 32
+}
+
+/**
+ * Planar floats to an integer PCM WAV, clipped to range.
+ *
+ * A sample is scaled by 2^(bits - 1) and rounded, which is the exact inverse
+ * of how every decoder here turns integers into floats -- so decoding a 16 or
+ * 24-bit file and writing it out again gives back the very samples. Scaling
+ * positive values by 32767 instead, as this once did, moved about one sample
+ * in two hundred by a step.
+ *
+ * 8-bit WAV is unsigned, centred on 128, as the format requires.
+ */
+export function encodeWav(channels: Float32Array[], sampleRate: number, options: EncodeWavOptions = {}): Uint8Array {
+  const bitDepth = options.bitDepth ?? 16
+  if (![8, 16, 24, 32].includes(bitDepth))
+    throw new Error(`WAV is written at 8, 16, 24 or 32 bits, not ${bitDepth}`)
+  const width = bitDepth / 8
   const channelCount = channels.length
   const frames = channels[0]?.length ?? 0
-  const dataSize = frames * channelCount * 2
+  const dataSize = frames * channelCount * width
   const bytes = new Uint8Array(44 + dataSize)
   const view = new DataView(bytes.buffer)
   const write = (offset: number, text: string): void => {
@@ -232,17 +251,35 @@ export function encodeWav(channels: Float32Array[], sampleRate: number): Uint8Ar
   view.setUint16(20, WAVE_FORMAT_PCM, true)
   view.setUint16(22, channelCount, true)
   view.setUint32(24, sampleRate, true)
-  view.setUint32(28, sampleRate * channelCount * 2, true)
-  view.setUint16(32, channelCount * 2, true)
-  view.setUint16(34, 16, true)
+  view.setUint32(28, sampleRate * channelCount * width, true)
+  view.setUint16(32, channelCount * width, true)
+  view.setUint16(34, bitDepth, true)
   write(36, 'data')
   view.setUint32(40, dataSize, true)
+
+  const scale = 2 ** (bitDepth - 1)
+  const max = scale - 1
+  const min = -scale
   let offset = 44
   for (let i = 0; i < frames; i++) {
     for (let c = 0; c < channelCount; c++) {
-      const sample = Math.max(-1, Math.min(1, channels[c][i]))
-      view.setInt16(offset, Math.round(sample < 0 ? sample * 32768 : sample * 32767), true)
-      offset += 2
+      const value = Math.max(min, Math.min(max, Math.round(channels[c][i] * scale)))
+      switch (bitDepth) {
+        case 8:
+          bytes[offset] = value + 128
+          break
+        case 16:
+          view.setInt16(offset, value, true)
+          break
+        case 24:
+          bytes[offset] = value & 0xFF
+          bytes[offset + 1] = (value >> 8) & 0xFF
+          bytes[offset + 2] = (value >> 16) & 0xFF
+          break
+        default:
+          view.setInt32(offset, value, true)
+      }
+      offset += width
     }
   }
   return bytes

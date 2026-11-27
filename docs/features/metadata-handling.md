@@ -85,6 +85,9 @@ if (picture)
 
 ## Writing
 
-`Output.setMetadata(metadata)` hands metadata to the muxer, and `Conversion`
-carries the input's metadata across by default. How much of it survives depends
-on the container: FLAC and Ogg take Vorbis comments, MP3 takes ID3.
+Not yet. `Output.setMetadata(metadata)` accepts tags, and `Conversion` passes the
+input's along, but none of the muxers or encoders write them out — so a
+converted file is untagged, whether it was copied or re-encoded.
+
+To keep tags across a conversion today, read them from the source and write them
+with a tool that does, or keep the source.
