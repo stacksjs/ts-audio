@@ -345,3 +345,8 @@ export type { AdtsHeader, AdtsFrame, AacProfile }
 
 // Export utilities
 export { parseAdtsHeader, createAdtsHeader, getSampleRateIndex, AAC_SAMPLE_RATES, AAC_PROFILES }
+
+// Decoding AAC to samples
+export { AAC_FRAME_LENGTH, AacDecodeError, createAacDecoder, imdct } from './aac-decoder'
+export { AAC_CONFIG_SAMPLE_RATES, parseAacAudioSpecificConfig } from './aac-config'
+export type { AacAudioSpecificConfig } from './aac-config'
